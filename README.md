@@ -1,6 +1,6 @@
 Compilar gerador dos conjuntos de treinamento e teste;
 
-gcc -o geradorDifusao -lm -O3 geradorDifusao.c
+`gcc -o geradorDifusao -lm -O3 geradorDifusao.c`
 
 Compilar GRNN sequencial:
 
