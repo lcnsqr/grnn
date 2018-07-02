@@ -4,7 +4,7 @@ gcc -o geradorDifusao -lm -O3 geradorDifusao.c
 
 Compilar GRNN sequencial:
 
-`gcc -o grnn\_cpu -lm -O3 grnn\_cpu.c`
+`gcc -o grnn_cpu -lm -O3 grnn_cpu.c`
 
 Compilar GRNN paralela:
 
