@@ -51,10 +51,16 @@ __global__ void estimKernel(float *train, const unsigned int total, const unsign
 	sx = &sData[threadIdx.x * dims];
 	sy = &sData[threadIdx.x * dims + dim[0]];
 
+	// Guardar diferença entre estimando 
+	// e variável independente da amostra
+	float dif;
+
 	for(int c = 0; c < dim[0]; c++){
 		sx[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + c];
 		// Distância entre estimando e variável independente da amostra
-		d += pow( x[c] - sx[c], 2);
+		//d += pow( x[c] - sx[c], 2);
+		dif = __fsub_rn(x[c], sx[c]);
+		d = __fadd_rn(d, __fmul_rn(dif, dif));
 	}
 	for(int c = 0; c < dim[1]; c++){
 		sy[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + dim[0] + c];
@@ -64,7 +70,8 @@ __global__ void estimKernel(float *train, const unsigned int total, const unsign
 	__syncthreads();
 	
 	// Fator comum
-	f = exp( -d / s );
+	//f = exp( -d / s );
+	f = __expf( __fdiv_rn(-d, s));
 
 	// Atalhos para soma parcial
 	float *numer = &yPart[blockIdx.x * 2 * dim[1]];
@@ -266,7 +273,7 @@ int main(int argc, char **argv){
 	testarDev(&train, &test, sigma, &errsum);
 	end = clock();
 	printf("\nTempo: %f segundos\n", (double)(end - begin) / CLOCKS_PER_SEC);
-	//printf("Erro médio: %f\n\n", errsum / (float)test.total);
+	printf("Erro médio: %f\n\n", errsum / (float)test.total);
 
 	return 0;
 }
