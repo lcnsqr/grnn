@@ -10,7 +10,7 @@
 #define TEST "test.bin"
 
 // Quantidade de threads
-#define NUM_THREADS	2
+#define NUM_THREADS	8
 
 // Estrutura para o contexto de cada thread que 
 // computa uma parcial do conjunto de treinamento
