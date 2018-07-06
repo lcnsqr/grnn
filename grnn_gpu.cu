@@ -32,7 +32,7 @@ float dist(float *v, float *w, int n){
 // x: Variável independente lida
 // yPart: Acumulador das somas parciais
 // s: Parâmetro da regressão
-__global__ void estimKernel(float *train, const unsigned int total, const unsigned int threadsPerBlock, unsigned int *dim, float *x, float *yPart, const float s){
+__global__ void estimKernel(const float* __restrict__ train, const unsigned int total, const unsigned int threadsPerBlock, const unsigned int* __restrict__ dim, const float* __restrict__ x, float* __restrict__ yPart, const float s){
 	// Ignorar se thread atual ultrapassou total de amostras
 	if ( blockIdx.x * threadsPerBlock + threadIdx.x + 1 > total ) return;
 	// Tamanho de cada amostra (variável independente e dependente)
@@ -58,7 +58,6 @@ __global__ void estimKernel(float *train, const unsigned int total, const unsign
 	for(int c = 0; c < dim[0]; c++){
 		sx[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + c];
 		// Distância entre estimando e variável independente da amostra
-		//d += pow( x[c] - sx[c], 2);
 		dif = __fsub_rn(x[c], sx[c]);
 		d = __fadd_rn(d, __fmul_rn(dif, dif));
 	}
@@ -70,18 +69,14 @@ __global__ void estimKernel(float *train, const unsigned int total, const unsign
 	__syncthreads();
 	
 	// Fator comum
-	//f = exp( -d / s );
 	f = __expf( __fdiv_rn(-d, s));
 
-	// Atalhos para soma parcial
-	float *numer = &yPart[blockIdx.x * 2 * dim[1]];
-	float *denom = &yPart[blockIdx.x * 2 * dim[1] + dim[1]];
 	// Efetuar a soma parcial para cada dimensão da variável dependente
 	for(unsigned int c = 0; c < dim[1]; c++){
 		// Parcial do numerador
-		atomicAdd( &numer[c], sy[c] * f );
+		atomicAdd( &yPart[blockIdx.x * 2 * dim[1] + c], sy[c] * f );
 		// Parcial do denominador
-		atomicAdd( &denom[c], f );
+		atomicAdd( &yPart[blockIdx.x * 2 * dim[1] + dim[1] + c], f );
 	}
 }
 
