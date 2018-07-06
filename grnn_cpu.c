@@ -147,7 +147,7 @@ int main(int argc, char **argv){
 	errsum = 0;
 	testar(&train, &test, sigma, &errsum);
 	end = clock();
-	printf("\nTempo: %f segundos\n", (double)(end - begin) / CLOCKS_PER_SEC);
+	//printf("\nTempo: %f segundos\n", (double)(end - begin) / CLOCKS_PER_SEC);
 	//printf("Erro médio: %f\n\n", errsum / (float)test.total);
 
 	return 0;
