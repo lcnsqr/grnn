@@ -262,16 +262,9 @@ int main(int argc, char **argv){
 	// Parâmetro sigma (variância)
 	sigma = 1.0/log(train.total);
 
-	// Medir tempo e execução
-	clock_t begin, end;
-
-	// Paralelo
-	begin = clock();
 	errsum = 0;
 	testarDev(&train, &test, sigma, &errsum);
-	end = clock();
-	//printf("\nTempo: %f segundos\n", (double)(end - begin) / CLOCKS_PER_SEC);
-	printf("Erro médio: %f\n\n", errsum / (float)test.total);
+	printf("\nErro médio: %f\n\n", errsum / (float)test.total);
 
 	return 0;
 }
