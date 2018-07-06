@@ -146,8 +146,6 @@ int main(int argc, char **argv){
 	// Sequencial
 	begin = clock();
 	errsum = 0;
-	printf("Sequencial (CPU): ", test.total);
-	fflush(stdout);
 	testar(&train, &test, sigma, &errsum);
 	end = clock();
 	printf("\nTempo: %f segundos\n", (double)(end - begin) / CLOCKS_PER_SEC);

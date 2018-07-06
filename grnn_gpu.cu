@@ -268,8 +268,6 @@ int main(int argc, char **argv){
 	// Paralelo
 	begin = clock();
 	errsum = 0;
-	printf("Paralelo (GPU):   ", test.total);
-	fflush(stdout);
 	testarDev(&train, &test, sigma, &errsum);
 	end = clock();
 	printf("\nTempo: %f segundos\n", (double)(end - begin) / CLOCKS_PER_SEC);
