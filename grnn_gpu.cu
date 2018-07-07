@@ -14,16 +14,6 @@ unsigned int sharedMemPerBlock;
 // Número máximo de threads por bloco
 unsigned int maxThreadsPerBlock;
 
-// Implementação da distância entre dois vetores
-float dist(float *v, float *w, int n){
-	// Quadrado da distância euclidiana entre o vetores v e w
-	float d = 0;
-	for (int i = 0; i < n; i++){
-		d += pow(w[i]-v[i], 2);
-	}
-	return d;
-}
-
 // Estimar a variável dependente (kernel)
 // train: Conjunto de treinamento
 // total: Total de amostras no conjunto de treinamento
@@ -80,7 +70,17 @@ __global__ void estimKernel(const float* __restrict__ train, const unsigned int 
 	}
 }
 
-void testarDev(struct pathSet *train, struct pathSet *test, float sigma, float *errsum){
+// Implementação da distância entre dois vetores para cálculo do erro
+float dist(float *v, float *w, int n){
+	// Quadrado da distância euclidiana entre o vetores v e w
+	float d = 0;
+	for (int i = 0; i < n; i++){
+		d += pow(w[i]-v[i], 2);
+	}
+	return d;
+}
+
+void testar(struct pathSet *train, struct pathSet *test, float sigma, float *errsum){
 	// Registrar conjunto de treinamento na memória para 
 	// evitar paginação e agilizar o acesso pela GPU ao
 	// mapear a memória entre o host e a memória da GPU
@@ -258,7 +258,7 @@ int main(int argc, char **argv){
 	sigma = 1.0/log(train.total);
 
 	errsum = 0;
-	testarDev(&train, &test, sigma, &errsum);
+	testar(&train, &test, sigma, &errsum);
 	printf("\nErro médio: %f\n\n", errsum / (float)test.total);
 
 	return 0;
