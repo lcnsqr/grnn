@@ -1,4 +1,4 @@
-Implementação da GRNN em diferentes paradigmas.
+Implementação da GRNN com diferentes métodos.
 
 * Sequencial em CPU.
 * Paralela em CPU com OpenMP.
