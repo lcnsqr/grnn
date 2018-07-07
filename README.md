@@ -20,6 +20,3 @@ Nenhum dos comandos `grnn_{cpu,omp,pthreads,gpu}` recebe opção, todos utilizam
 Pode ser necessário alterar algumas definições no arquivo `Makefile` antes de compilar a versão GPU com Cuda:
 
 Localização das bibliotecas Cuda (linha 37): `CUDA_PATH ?= "/usr/local/cuda"`
-
-Includes necessários (linha 234): `INCLUDES  := -I/usr/local/cuda/samples/common/inc`
-
