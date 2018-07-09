@@ -66,7 +66,6 @@ int main (int argc, char **argv){
 	train.vertices = 2;
 	train.dim = (unsigned int*)malloc(2*sizeof(unsigned int));
 	train.dim[0] = DIM;
-	// Somente o último componente
 	train.dim[1] = DIM;
 	// Tamanho de um caminho (soma das dimensões dos vértices)
 	unsigned int sdim = train.dim[0]+train.dim[1];
@@ -89,8 +88,6 @@ int main (int argc, char **argv){
 		memcpy(&train.data.f[i*sdim], w[0]._, train.dim[0]*sizeof(float));
 		// Valor dependente
 		memcpy(&train.data.f[i*sdim+train.dim[0]], w[1]._, train.dim[1]*sizeof(float));
-		// Somente o último componente
-		//train.data.f[i*sdim+train.dim[0]] = w[1]._[DIM-1];
 		// Exibir progresso
 		if ( (i+1) % 10000 == 0 ) printf("%d\n", i+1);
 	}
