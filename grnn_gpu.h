@@ -188,7 +188,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 		// Sem endereço para o erro somado, substituir valores no conjunto estimado
 		if ( errsum == NULL ){
 			// Escrever estimativa
-			cudaMemcpy(&estim->data.f[i*dims], &y, dim[1]*sizeof(float), cudaMemcpyHostToHost);
+			cudaMemcpy(&estim->data.f[i*dims+dim[0]], y, dim[1]*sizeof(float), cudaMemcpyHostToHost);
 		}
 		else {
 			// Erro da estimativa
@@ -196,15 +196,5 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 			// Erro acumulado (sem raiz)
 			*errsum += err;
 		}
-		// Mostrar progresso
-		putchar('.');
-		fflush(stdout);
-		if ( (i+1) % 10 == 0 ){
-			// Espaço a cada 10 pontos
-			putchar(' ');
-			fflush(stdout);
-		}
 	}
-	putchar('\n');
-	fflush(stdout);
 }

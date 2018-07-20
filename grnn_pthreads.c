@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "pathio.h"
 
 // Arquivo das amostras
@@ -160,82 +161,63 @@ void estim(float *train, unsigned int total, unsigned int *dim, float *x, float 
 	free(denom);
 }
 
-void testar(struct pathSet *train, struct pathSet *test, float sigma, float *errsum){
+void estimar(struct pathSet *train, struct pathSet *test, float *errsum){
 	// Vetor da estimativa 
 	float *y = (float*)malloc(sizeof(float)*train->dim[1]);
 	// Erro da estimativa
 	float err = 0;
 	// Tamanho de um caminho (soma das dimensões dos vértices)
 	unsigned int dims = train->dim[0]+train->dim[1];
+	unsigned int *dim = train->dim;
+	// Parâmetro sigma (variância)
+	float sigma = 1.0/log(train->total);
 	// Expressão envolvendo sigma no numerador do fator comum é constante
 	float s = 2*pow(sigma,2);
 
 	// Iterar em todo o conjunto de teste
 	for (int i = 0; i < test->total; i++){
 		estim(train->data.f, train->total, train->dim, &test->data.f[i*dims], y, s);
-		/*
-		// Exibir valores da condição inicial
-		printf("Condição inicial\n");
-		for (int c = 0; c < test->dim[0]; c++){
-			printf("%.6f\n", test->data.f[i*dims + c]);
+		// Sem endereço para o erro somado, substituir valores no conjunto estimado
+		if ( errsum == NULL ){
+			// Escrever estimativa
+			memcpy(&test->data.f[i*dims+dim[0]], y, dim[1]*sizeof(float));
 		}
-		// Exibir estimativa e valor observado
-		printf("Valor Observado:\n");
-		for (int c = 0; c < test->dim[1]; c++){
-			printf("%.6f\n", test->data.f[i*dims + test->dim[0] + c]);
-		}
-		printf("Estimativa: \n");
-		for (int c = 0; c < test->dim[1]; c++){
-			printf("%.6f\n", y[c]);
-		}
-		*/
-		// Erro da estimativa
-		err = sqrt(dist(&test->data.f[i*dims], y, test->dim[1]));
-		/*
-		printf("Diferença: %f\n", err);
-		printf("\n");
-		*/
-		// Erro acumulado (sem raiz)
-		*errsum += err;
-		// Mostrar progresso
-		putchar('.');
-		fflush(stdout);
-		if ( (i+1) % 10 == 0 ){
-			// Espaço a cada 10 pontos
-			putchar(' ');
-			fflush(stdout);
+		else {
+			// Erro da estimativa
+			err = sqrt(dist(&test->data.f[i*dims], y, dim[1]));
+			// Erro acumulado (sem raiz)
+			*errsum += err;
 		}
 	}
 	free(y);
 }
 
 int main(int argc, char **argv){
-	struct pathSet train, test;
+	struct pathSet train, estim;
 	// Carregar arquivo das amostras de treinamento
 	pathSetLoad(TRAIN, &train);
 
 	// Arquivo de teste
-	pathSetLoad(TEST, &test);
+	pathSetLoad(TEST, &estim);
 
 	printf("Conjunto de treinamento: %d amostras.\n", train.total);
 	printf("Dimensões da variável independente: %d\n", train.dim[0]);
 	printf("Dimensões da variável dependente:   %d\n", train.dim[1]);
 
-	// Parâmetro sigma da regressão
-	float sigma;
-	// Erro acumulado
-	float errsum;
-
-	// Testar
-	printf("Calculando estimativas para o conjunto teste (%d amostras).\n\n", test.total);
-	puts("O ponto (.) representa a estimativa para cada amostra do conjunto de teste\n");
-
-	// Parâmetro sigma (variância)
-	sigma = 1.0/log(train.total);
-
-	errsum = 0;
-	testar(&train, &test, sigma, &errsum);
-	printf("\nErro médio: %f\n\n", errsum / (float)test.total);
+	// Calcular o erro ou salvar um arquivo com o resultado
+	printf("Estimando %d amostras de teste...\n", estim.total);
+	if (argc > 1 ){
+		// Salvar resultado no arquivo informado
+		estimar(&train, &estim, NULL);
+		pathSetSave(argv[1], &estim);
+		printf("Resultado salvo em %s\n", argv[1]);
+	}
+	else {
+		// Calcular o erro médio para as estimativas
+		float errsum = 0;
+		estimar(&train, &estim, &errsum);
+		printf("Erro médio: %f\n", errsum / (float)estim.total);
+	}
 
 	return 0;
 }
