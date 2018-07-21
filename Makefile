@@ -264,7 +264,7 @@ endif
 # Target rules
 all: build
 
-build: geradorDifusao geradorMandelbrot verMandelbrot grnn_gpu grnn_cpu grnn_omp grnn_pthreads
+build: geradorDifusao grnn_gpu grnn_cpu grnn_omp grnn_pthreads
 
 check.deps:
 ifeq ($(SAMPLE_ENABLED),0)
@@ -288,12 +288,6 @@ grnn_gpu: grnn_gpu.o
 geradorDifusao: geradorDifusao.c
 	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) geradorDifusao.c
 
-geradorMandelbrot: geradorMandelbrot.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -fopenmp `sdl2-config --cflags --libs` geradorMandelbrot.c
-
-verMandelbrot: verMandelbrot.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -fopenmp `sdl2-config --cflags --libs` verMandelbrot.c
-
 grnn_pthreads: grnn_pthreads.c
 	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pthread grnn_pthreads.c
 
@@ -308,7 +302,7 @@ run: build
 
 clean:
 	rm -f grnn_gpu grnn_gpu.o
-	rm verMandelbrot geradorMandelbrot geradorDifusao grnn_cpu grnn_omp grnn_pthreads
+	rm geradorDifusao grnn_cpu grnn_omp grnn_pthreads
 #	rm -f template template.o template_cpu.o
 #	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/template
 

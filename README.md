@@ -8,8 +8,6 @@ Implementação da GRNN com diferentes métodos.
 Para compilar todos os comandos, executar `make all`. Para compilar os comandos individualmente:
 
 * Gerador do conjuntos para a equação do calor: `make geradorDifusao`
-* Gerador do conjuntos para o conjunto Mandelbrot: `make geradorMandelbrot`
-* Visualizador das estimativas para o conjunto Mandelbrot: `make verMandelbrot`
 * Estimador sequencial usando CPU: `make grnn_cpu`
 * Estimador paralelizado com OpenMP: `make grnn_omp`
 * Estimador paralelizado com pthreads: `make grnn_pthreads`
@@ -27,4 +25,6 @@ Um nome de arquivo pode ser informado como argumento ao comando `grnn_{cpu,omp,p
 
 ## Conjunto Mandelbrot
 
-O comando `geradorMalndelbrot` abre um tela com a representação gráfica do conjunto Mandelbrot. A tecla **z** aproxima, a tecla **x** afasta e as teclas de direção transladam. A tecla **s** armazena em *train.bin* o conjunto de treinamento para o semiplano exibido e a tecla **t** armazena em *test.bin* o conjunto de teste para o semiplano exibido. Depois de gerar um arquivo de resultados com o comando `grnn_{cpu,omp,pthreads,gpu} result.bin`, a imagem com as estimativas para o conjunto de teste é exibida com o comando `verMaldelbrot result.bin`.
+Além dos resultados para a equação do calor, podem ser estimados os pontos do conjunto fractal Mandelbrot. Os comandos `geradorMandelbrot` e `verMandelbrot` são compilados separadamente com o comando `make -f Makefile.mandelbrot`. São necessárias as bibliotecas de desenvolvimento **SDL2** para compilar esses comandos.
+
+O comando `geradorMalndelbrot` abre um tela com a representação gráfica do conjunto Mandelbrot. A tecla **z** aproxima, a tecla **x** afasta e as teclas de direção transladam o semiplano. A tecla **s** armazena em *train.bin* o conjunto de treinamento para o semiplano exibido e a tecla **t** armazena em *test.bin* o conjunto de teste para o semiplano exibido. Depois de gerar um arquivo de resultados com o comando `grnn_{cpu,omp,pthreads,gpu} result.bin`, a imagem com as estimativas para o conjunto de teste é exibida com o comando `verMaldelbrot result.bin`.
