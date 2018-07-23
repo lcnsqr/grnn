@@ -32,12 +32,14 @@ __global__ void estimKernel(const float* __restrict__ train, const unsigned int 
 	// e variável independente da amostra
 	float dif;
 
+	// Copiar cada dimensão da variável independente para memória compartilhada
 	for(int c = 0; c < dim[0]; c++){
 		sx[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + c];
 		// Distância entre estimando e variável independente da amostra
 		dif = __fsub_rn(x[c], sx[c]);
 		d = __fadd_rn(d, __fmul_rn(dif, dif));
 	}
+	// Copiar cada dimensão da variável dependente para memória compartilhada
 	for(int c = 0; c < dim[1]; c++){
 		sy[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + dim[0] + c];
 	}
