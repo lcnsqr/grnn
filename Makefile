@@ -289,13 +289,13 @@ geradorDifusao: geradorDifusao.c
 	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) geradorDifusao.c
 
 grnn_pthreads: grnn_pthreads.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pthread grnn_pthreads.c
+	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg -pthread grnn_pthreads.c
 
 grnn_omp: grnn_omp.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -fopenmp grnn_omp.c
+	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg -fopenmp grnn_omp.c
 
 grnn_cpu: grnn_cpu.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) grnn_cpu.c
+	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg grnn_cpu.c
 
 run: build
 	$(EXEC) ./grnn_gpu
