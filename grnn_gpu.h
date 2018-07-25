@@ -34,14 +34,16 @@ __global__ void estimKernel(const float* __restrict__ train, const unsigned int 
 
 	// Copiar cada dimensão da variável independente para memória compartilhada
 	for(int c = 0; c < dim[0]; c++){
-		sx[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + c];
+		//sx[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + c];
+		sx[c] = train[blockIdx.x * threadsPerBlock + threadIdx.x + c * total];
 		// Distância entre estimando e variável independente da amostra
 		dif = __fsub_rn(x[c], sx[c]);
 		d = __fadd_rn(d, __fmul_rn(dif, dif));
 	}
 	// Copiar cada dimensão da variável dependente para memória compartilhada
 	for(int c = 0; c < dim[1]; c++){
-		sy[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + dim[0] + c];
+		//sy[c] = train[(blockIdx.x * threadsPerBlock + threadIdx.x) * dims + dim[0] + c];
+		sy[c] = train[total * dim[0] + blockIdx.x * threadsPerBlock + threadIdx.x + c * total];
 	}
 
 	// Sincronizar threads
@@ -57,16 +59,6 @@ __global__ void estimKernel(const float* __restrict__ train, const unsigned int 
 		// Parcial do denominador
 		atomicAdd( &yPart[blockIdx.x * 2 * dim[1] + dim[1] + c], f );
 	}
-}
-
-// Implementação da distância entre dois vetores para cálculo do erro
-float dist(float *v, float *w, int n){
-	// Quadrado da distância euclidiana entre o vetores v e w
-	float d = 0;
-	for (int i = 0; i < n; i++){
-		d += pow(w[i]-v[i], 2);
-	}
-	return d;
 }
 
 // Identificar e iniciar o dispositivo
@@ -123,7 +115,9 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 	unsigned int blocksPerGrid = train->total / threadsPerBlock;
 
 	// Variável independente para associar à estimativa
+	float *x;
 	float *xDev;
+	cudaMallocHost(&x, dim[0]*sizeof(float));
 	cudaMalloc(&xDev, dim[0]*sizeof(float));
 
 	// Cada bloco produz um par de somas parciais 
@@ -158,7 +152,10 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 	// Iterar em todo o conjunto a estimar
 	for (int i = 0; i < estim->total; i++){
 		// Copiar variável independente a ser estimada pela GPU
-		cudaMemcpy(xDev, &estim->data.f[i*dims], dim[0]*sizeof(float), cudaMemcpyHostToDevice);
+		for (int j = 0; j < dim[0]; j++){
+			x[j] = estim->data.f[i + estim->total * j];
+		}
+		cudaMemcpy(xDev, x, dim[0]*sizeof(float), cudaMemcpyHostToDevice);
 
 		// Invocar kernel
 		estimKernel<<<blocksPerGrid, threadsPerBlock, sharedSize>>>(trainDataDev, train->total, threadsPerBlock, dimDev, xDev, yPartDev, s);
@@ -190,11 +187,18 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 		// Sem endereço para o erro somado, substituir valores no conjunto estimado
 		if ( errsum == NULL ){
 			// Escrever estimativa
-			cudaMemcpy(&estim->data.f[i*dims+dim[0]], y, dim[1]*sizeof(float), cudaMemcpyHostToHost);
+			//cudaMemcpy(&estim->data.f[i*dims+dim[0]], y, dim[1]*sizeof(float), cudaMemcpyHostToHost);
+			for (int j = 0; j < dim[1]; j++){
+				estim->data.f[estim->total*dim[0] + i + estim->total*j] = y[j];
+			}
 		}
 		else {
 			// Erro da estimativa
-			err = sqrt(dist(&estim->data.f[i*dims], y, dim[1]));
+			err = 0;
+			for (int j = 0; j < dim[1]; j++){
+				err += pow(estim->data.f[estim->total*dim[0] + i + estim->total*j] - y[j], 2);
+			}
+			err = sqrt(err);
 			// Erro acumulado (sem raiz)
 			*errsum += err;
 		}

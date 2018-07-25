@@ -84,10 +84,16 @@ int main (int argc, char **argv){
 		inicial(&w[0]);
 		// Gerar as soluções por diferenças finitas, após T segundos
 		gerar(w, ALFA, POS0, POS1, T);
-		// Copiar para posição correspondente na memória do conjunto
-		memcpy(&train.data.f[i*sdim], w[0]._, train.dim[0]*sizeof(float));
-		// Valor dependente
-		memcpy(&train.data.f[i*sdim+train.dim[0]], w[1]._, train.dim[1]*sizeof(float));
+		// Copiar v.i. para posição correspondente na memória do conjunto
+		//memcpy(&train.data.f[i*sdim], w[0]._, train.dim[0]*sizeof(float));
+		for (int j = 0; j < train.dim[0]; j++){
+			train.data.f[i + j * train.total] = w[0]._[j];
+		}
+		// Variável dependente
+		//memcpy(&train.data.f[i*sdim+train.dim[0]], w[1]._, train.dim[1]*sizeof(float));
+		for (int j = 0; j < train.dim[1]; j++){
+			train.data.f[train.total*train.dim[0] + i + j * train.total] = w[1]._[j];
+		}
 		// Exibir progresso
 		if ( (i+1) % 10000 == 0 ) printf("%d\n", i+1);
 	}
@@ -115,10 +121,16 @@ int main (int argc, char **argv){
 		inicial(&w[0]);
 		// Gerar as soluções por diferenças finitas, após T segundos
 		gerar(w, ALFA, POS0, POS1, T);
-		// Copiar para posição correspondente na memória do conjunto
-		memcpy(&test.data.f[i*sdim], w[0]._, test.dim[0]*sizeof(float));
-		// Valor dependente
-		memcpy(&test.data.f[i*sdim+test.dim[0]], w[1]._, test.dim[1]*sizeof(float));
+		// Copiar v.i. para posição correspondente na memória do conjunto
+		//memcpy(&test.data.f[i*sdim], w[0]._, test.dim[0]*sizeof(float));
+		for (int j = 0; j < test.dim[0]; j++){
+			test.data.f[i + j * test.total] = w[0]._[j];
+		}
+		// Variável dependente
+		//memcpy(&test.data.f[i*sdim+test.dim[0]], w[1]._, test.dim[1]*sizeof(float));
+		for (int j = 0; j < test.dim[1]; j++){
+			test.data.f[test.total*test.dim[0] + i + j * test.total] = w[1]._[j];
+		}
 		// Somente o último componente
 		//test.data.f[i*sdim+test.dim[0]] = w[1]._[DIM-1];
 		// Exibir progresso

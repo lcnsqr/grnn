@@ -18,8 +18,13 @@
 struct TrainPart {
 	// Endereço da parte donjunto de treinamento
 	float *train;
-	// total de pares no treinamento parcial
+	// Endereço da parte donjunto de treinamento
+	// com as variáveis dependentes
+	float *train_y;
+	// Total de pares no treinamento
 	unsigned int total;
+	// Total de pares no treinamento parcial
+	unsigned int totalPart;
 	// Dimensões da variável independente e dependente
 	unsigned int *dim;
 	// Variável independente lida
@@ -31,32 +36,26 @@ struct TrainPart {
 	float *denom;
 };
 
-// Implementação da distância entre dois vetores
-float dist(float *v, float *w, int n){
-	// Quadrado da distância euclidiana entre o vetores v e w
-	float d = 0;
-	for (int i = 0; i < n; i++){
-		d += pow(w[i]-v[i], 2);
-	}
-	return d;
-}
-
 // Thread para computar parcial do conjunto de treinamento
 void *estimPart(void *voidTrainPart){
 	// Estrutura da parcial do treinamento
 	struct TrainPart *tp = (struct TrainPart*)voidTrainPart;
-	// Tamanho de um caminho (soma das dimensões dos vértices)
-	unsigned int dims = tp->dim[0]+tp->dim[1];
 	// Fator comum para cada amostra
 	float f;
-	// Iterar em cada amostra de treinamento
-	for (int i = 0; i < tp->total; i++){
+	// Quadrado da distância euclidiana entre a amostra e o estimando
+	float d;
+	// Iterar em cada amostra de treinamento para o conjunto parcial
+	for (int i = 0; i < tp->totalPart; i++){
 		// Computar o fator comum da i-esima amostra
-		f = exp( -dist(tp->x, &tp->train[i*dims], tp->dim[0]) / tp->s );
+		d = 0;
+		for (int j = 0; j < tp->dim[0]; j++){
+			d += pow(tp->train[i + j * tp->total] - tp->x[j], 2);
+		}
+		f = exp( - d / tp->s );
 		// Iterar para cada componente de y
 		for (int c = 0; c < tp->dim[1]; c++){
 			// Numerador da fração para o c-ésimo componente
-			tp->numer[c] += tp->train[i*dims + tp->dim[0] + c] * f;
+			tp->numer[c] += tp->train_y[c * tp->total + i] * f;
 			// Denominador da fração
 			tp->denom[c] += f;
 		}
@@ -71,9 +70,7 @@ void *estimPart(void *voidTrainPart){
 // x: Variável independente lida
 // y: Estimativa da variável dependente
 // s: Parâmetro da regressão
-void estim(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s){
-	// Tamanho de um caminho (soma das dimensões dos vértices)
-	unsigned int dims = dim[0]+dim[1];
+void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s){
 	// Contexto para cada thread
 	struct TrainPart tp[NUM_THREADS];
 	// Acumuladores do numerador e denominador 
@@ -89,8 +86,10 @@ void estim(float *train, unsigned int total, unsigned int *dim, float *x, float 
 			aNumer[t][c] = 0;
 			aDenom[t][c] = 0;
 		}
-		tp[t].train = &train[t*total/NUM_THREADS];
-		tp[t].total = total/NUM_THREADS;
+		tp[t].train = &train[t*(total/NUM_THREADS)];
+		tp[t].train_y = &train[total*dim[0] + t*(total/NUM_THREADS)];
+		tp[t].total = total;
+		tp[t].totalPart = total / NUM_THREADS;
 		tp[t].dim = dim;
 		tp[t].x = x;
 		tp[t].s = s;
@@ -98,7 +97,7 @@ void estim(float *train, unsigned int total, unsigned int *dim, float *x, float 
 		tp[t].denom = aDenom[t];
 	}
 
-	// Threads para cada conjunto de treinamento
+	// Threads para cada subconjunto de treinamento
    pthread_t thread[NUM_THREADS];
    pthread_attr_t attr;
    int pthread_return;
@@ -140,7 +139,7 @@ void estim(float *train, unsigned int total, unsigned int *dim, float *x, float 
 		// para cada dimensão da variável dependente
 		for (int c = 0; c < dim[1]; c++){
 			numer[c] += aNumer[t][c];
-			denom[c] += aNumer[t][c];
+			denom[c] += aDenom[t][c];
 		}
 		free(aNumer[t]);
 		free(aDenom[t]);
@@ -161,13 +160,14 @@ void estim(float *train, unsigned int total, unsigned int *dim, float *x, float 
 	free(denom);
 }
 
-void estimar(struct pathSet *train, struct pathSet *test, float *errsum){
+void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
+	// Vetor da variável independente 
+	float *x = (float*)malloc(sizeof(float)*train->dim[0]);
 	// Vetor da estimativa 
 	float *y = (float*)malloc(sizeof(float)*train->dim[1]);
 	// Erro da estimativa
 	float err = 0;
-	// Tamanho de um caminho (soma das dimensões dos vértices)
-	unsigned int dims = train->dim[0]+train->dim[1];
+	// Tamanho das dimensões das variáveis
 	unsigned int *dim = train->dim;
 	// Parâmetro sigma (variância)
 	float sigma = 1.0/log(train->total);
@@ -175,20 +175,33 @@ void estimar(struct pathSet *train, struct pathSet *test, float *errsum){
 	float s = 2*pow(sigma,2);
 
 	// Iterar em todo o conjunto de teste
-	for (int i = 0; i < test->total; i++){
-		estim(train->data.f, train->total, train->dim, &test->data.f[i*dims], y, s);
+	for (int i = 0; i < estim->total; i++){
+		// Construir variável independente envolvida 
+		// a partir dos dados dispostos na memória
+		for (int j = 0; j < dim[0]; j++){
+			x[j] = estim->data.f[i + estim->total * j];
+		}
+		// Gerar estimativa
+		estimativa(train->data.f, train->total, dim, x, y, s);
 		// Sem endereço para o erro somado, substituir valores no conjunto estimado
 		if ( errsum == NULL ){
 			// Escrever estimativa
-			memcpy(&test->data.f[i*dims+dim[0]], y, dim[1]*sizeof(float));
+			for (int j = 0; j < dim[1]; j++){
+				estim->data.f[estim->total*dim[0] + i + estim->total*j] = y[j];
+			}
 		}
 		else {
 			// Erro da estimativa
-			err = sqrt(dist(&test->data.f[i*dims], y, dim[1]));
-			// Erro acumulado (sem raiz)
+			err = 0;
+			for (int j = 0; j < dim[1]; j++){
+				err += pow(estim->data.f[estim->total*dim[0] + i + estim->total*j] - y[j], 2);
+			}
+			err = sqrt(err);
+			// Erro acumulado
 			*errsum += err;
 		}
 	}
+	free(x);
 	free(y);
 }
 
