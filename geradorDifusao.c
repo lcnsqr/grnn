@@ -141,8 +141,6 @@ int main (int argc, char **argv){
 		for (int j = 0; j < test.dim[1]; j++){
 			test.data.f[test.total*test.dim[0] + i + j * test.total] = w[1]._[j];
 		}
-		// Exibir progresso
-		if ( (i+1) % 10000 == 0 ) printf("%d\n", i+1);
 	}
 
 	// Salvar conjunto de treinamento
