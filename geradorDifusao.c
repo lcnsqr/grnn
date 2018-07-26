@@ -108,8 +108,6 @@ int main (int argc, char **argv){
 		for (int j = 0; j < train.dim[1]; j++){
 			train.data.f[train.total*train.dim[0] + i + j * train.total] = w[1]._[j];
 		}
-		// Exibir progresso
-		if ( (i+1) % 10000 == 0 ) printf("%d\n", i+1);
 	}
 	// Salvar conjunto de treinamento
 	pathSetSave(TRAIN, &train);
