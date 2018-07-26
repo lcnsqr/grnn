@@ -76,7 +76,15 @@ int main(int argc, char **argv){
 	init_gpu();
 
 	// Hardware
-	printf("Dispositivo: \"%s\"\n", deviceProp.name);
+	printf("Dispositivo: %s\n", deviceProp.name);
+	printf("Geração: ");
+	switch ( deviceProp.major ){
+		case 3: printf("Kepler"); break;
+		case 5: printf("Maxwell"); break;
+		case 6: printf("Pascal"); break;
+		case 7: printf("Volta"); break;
+	}
+	printf("\n");
 	printf("Capacidade: %d.%d\n", deviceProp.major, deviceProp.minor);
 	printf("Multiprocessadores: %d\n", deviceProp.multiProcessorCount);
 	printf("CUDA Cores / MP: %d\n", _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor));
