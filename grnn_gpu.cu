@@ -75,18 +75,18 @@ int main(int argc, char **argv){
 	// Identificar dispositivo
 	init_gpu();
 
+	// Hardware
 	printf("Dispositivo: \"%s\"\n", deviceProp.name);
+	printf("Capacidade: %d.%d\n", deviceProp.major, deviceProp.minor);
+	printf("Multiprocessadores: %d\n", deviceProp.multiProcessorCount);
+	printf("CUDA Cores / MP: %d\n", _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor));
+	printf("Memória Global: %.0f MB\n", (float)deviceProp.totalGlobalMem/1048576.0f);
+	// Driver e Runtime
 	int driverVersion = 0, runtimeVersion = 0;
 	cudaDriverGetVersion(&driverVersion);
 	cudaRuntimeGetVersion(&runtimeVersion);
-	printf("CUDA Capability: %d.%d\n", deviceProp.major, deviceProp.minor);
-	char msg[256];
-	sprintf(msg, "Memória Global: %.0f MBytes (%llu bytes)\n", (float)deviceProp.totalGlobalMem/1048576.0f, (unsigned long long) deviceProp.totalGlobalMem);
-	printf("%s", msg);
-	printf("(%2d) Multiprocessors, (%3d) CUDA Cores/MP: %d CUDA Cores\n",
-		deviceProp.multiProcessorCount,
-		_ConvertSMVer2Cores(deviceProp.major, deviceProp.minor),
-		_ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) * deviceProp.multiProcessorCount);
+	printf("CUDA Driver: %d.%d\n", driverVersion/1000, (driverVersion%100)/10);
+	printf("CUDA Runtime: %d.%d\n", runtimeVersion/1000, (runtimeVersion%100)/10);
 
 	struct pathSet train, estim;
 	// Carregar arquivo das amostras de treinamento
