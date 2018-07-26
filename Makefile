@@ -264,7 +264,7 @@ endif
 # Target rules
 all: build
 
-build: geradorDifusao grnn_gpu grnn_cpu grnn_omp grnn_pthreads
+build: geradorDifusao grnn_gpu grnn_cpu grnn_pthreads
 
 check.deps:
 ifeq ($(SAMPLE_ENABLED),0)
@@ -291,9 +291,6 @@ geradorDifusao: geradorDifusao.c
 grnn_pthreads: grnn_pthreads.c
 	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg -pthread grnn_pthreads.c
 
-grnn_omp: grnn_omp.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg -fopenmp grnn_omp.c
-
 grnn_cpu: grnn_cpu.c
 	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg grnn_cpu.c
 
@@ -302,7 +299,7 @@ run: build
 
 clean:
 	rm -f grnn_gpu grnn_gpu.o
-	rm geradorDifusao grnn_cpu grnn_omp grnn_pthreads
+	rm geradorDifusao grnn_cpu grnn_pthreads
 #	rm -f template template.o template_cpu.o
 #	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/template
 
