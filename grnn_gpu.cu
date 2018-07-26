@@ -4,6 +4,8 @@
 #include <string.h>
 #include "pathio.h"
 #include "grnn_gpu.h"
+#include <cuda_runtime.h>
+#include <helper_cuda.h>
 
 // Arquivo das amostras
 #define TRAIN "train.bin"
@@ -29,6 +31,19 @@ int main(int argc, char **argv){
 
 	// Identificar dispositivo
 	init_gpu();
+
+	printf("Dispositivo: \"%s\"\n", deviceProp.name);
+	int driverVersion = 0, runtimeVersion = 0;
+	cudaDriverGetVersion(&driverVersion);
+	cudaRuntimeGetVersion(&runtimeVersion);
+	printf("CUDA Capability: %d.%d\n", deviceProp.major, deviceProp.minor);
+	char msg[256];
+	sprintf(msg, "Memória Global: %.0f MBytes (%llu bytes)\n", (float)deviceProp.totalGlobalMem/1048576.0f, (unsigned long long) deviceProp.totalGlobalMem);
+	printf("%s", msg);
+	printf("(%2d) Multiprocessors, (%3d) CUDA Cores/MP: %d CUDA Cores\n",
+		deviceProp.multiProcessorCount,
+		_ConvertSMVer2Cores(deviceProp.major, deviceProp.minor),
+		_ConvertSMVer2Cores(deviceProp.major, deviceProp.minor) * deviceProp.multiProcessorCount);
 
 	struct pathSet train, estim;
 	// Carregar arquivo das amostras de treinamento
