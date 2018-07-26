@@ -72,6 +72,8 @@ int main (int argc, char **argv){
 
 	// Semente aleatória
 	srand((unsigned int)time(NULL));
+	// Utilizar uma semente fixa para gerar sempre os mesmos conjuntos
+	srand(0);
 
 	// Conjunto de treinamento
 	struct pathSet train;
