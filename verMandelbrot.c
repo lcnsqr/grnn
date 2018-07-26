@@ -53,9 +53,6 @@ void render(struct Context *ctx){
 	#pragma omp parallel for private(x,y,c,rgba)
 	for (int i = 0; i < ctx->view.frameSize; i += ctx->view.depth){
 		// Conjunto do resultado
-		//x = ctx->result.data.f[3*(i/ctx->view.depth)];
-		//y = ctx->result.data.f[3*(i/ctx->view.depth)+1];
-		//c = floor(ctx->iterations * ctx->result.data.f[3*(i/ctx->view.depth)+2]);
 		x = ctx->result.data.f[ (i/ctx->view.depth) ];
 		y = ctx->result.data.f[ (i/ctx->view.depth) + WIDTH*HEIGHT ];
 		c = floor(ctx->iterations * ctx->result.data.f[ (i/ctx->view.depth) + WIDTH*HEIGHT*2 ]);

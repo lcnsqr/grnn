@@ -89,9 +89,6 @@ void render(struct Context *ctx){
       y = ctx->ymin + (ctx->ymax - ctx->ymin) * iy / (ctx->view.height - 1);
 		c = floor((float)ITERATIONS * log(mandelIter(x, y, ctx->iterations) )/log(ITERATIONS+1));
 		// Conjunto de treinamento
-		//ctx->train.data.f[3*(i/ctx->view.depth)] = x;
-		//ctx->train.data.f[3*(i/ctx->view.depth)+1] = y;
-		//ctx->train.data.f[3*(i/ctx->view.depth)+2] = (float)c/ITERATIONS;
 		ctx->train.data.f[ (i/ctx->view.depth) ] = x;
 		ctx->train.data.f[ (i/ctx->view.depth) + ctx->train.total ] = y;
 		ctx->train.data.f[ (i/ctx->view.depth) + ctx->train.total*2 ] = (float)c/ITERATIONS;
