@@ -11,6 +11,22 @@
 #define TEST "test.bin"
 
 int main(int argc, char **argv){
+	// Opções da linha de comando
+	const char* outfile = NULL;
+	float ss = 1;
+	for(int i = 1; i < argc; i++){
+		switch (argv[i][1]){
+		case 'o':
+			// Salvar resultado no arquivo indicado
+			outfile = argv[i+1];
+		break;
+		case 's':
+			// Escalar do parâmetro sigma
+			ss = atof(argv[i+1]);
+		break;
+		}
+	}
+
 	// Identificar dispositivo
 	init_gpu();
 
@@ -27,17 +43,19 @@ int main(int argc, char **argv){
 
 	// Calcular o erro ou salvar um arquivo com o resultado
 	printf("Estimando %d amostras de teste...\n", estim.total);
-	if (argc > 1 ){
-		// Salvar resultado no arquivo informado
-		estimar(&train, &estim, NULL);
-		pathSetSave(argv[1], &estim);
-		printf("Resultado salvo em %s\n", argv[1]);
-	}
-	else {
-		// Calcular o erro médio para as estimativas
-		float errsum = 0;
-		estimar(&train, &estim, &errsum);
-		printf("Erro médio: %f\n", errsum / (float)estim.total);
+	// Soma dos erros das estimativas
+	float errsum = 0;
+
+	// Gerar estimativas
+	estimar(&train, &estim, ss, &errsum);
+
+	// Exibir erro médio
+	printf("Erro médio: %f\n", errsum / (float)estim.total);
+
+	// Salvar resultado no arquivo informado
+	if (outfile != NULL ){
+		pathSetSave(outfile, &estim);
+		printf("Resultado salvo em %s\n", outfile);
 	}
 
 	return 0;

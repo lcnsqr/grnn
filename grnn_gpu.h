@@ -82,7 +82,14 @@ void init_gpu(){
 	cudaSetDeviceFlags(cudaDeviceMapHost);
 }
 
-void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
+/*
+ * Preparar o grid computar o conjunto de teste
+ * train: Conjunto de treinamento
+ * estim: Conjunto de teste
+ * ss: Escalar para o parâmetro sigma
+ * errsum: soma do erro
+ */
+void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum){
 	// Registrar conjunto de treinamento na memória para 
 	// evitar paginação e agilizar o acesso pela GPU ao
 	// mapear a memória entre o host e a memória da GPU
@@ -139,7 +146,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 	cudaMallocHost(&y, dim[1]*sizeof(float));
 
 	// Parâmetro sigma (variância)
-	float sigma = 1.0/log(train->total);
+	float sigma = ss/log(train->total);
 	// Expressão envolvendo sigma no numerador do fator comum é constante
 	float s = 2*pow(sigma,2);
 
@@ -184,23 +191,15 @@ void estimar(struct pathSet *train, struct pathSet *estim, float *errsum){
 			y[d] = numer[d] / denom[d];
 		}
 
-		// Sem endereço para o erro somado, substituir valores no conjunto estimado
-		if ( errsum == NULL ){
-			// Escrever estimativa
-			//cudaMemcpy(&estim->data.f[i*dims+dim[0]], y, dim[1]*sizeof(float), cudaMemcpyHostToHost);
-			for (int j = 0; j < dim[1]; j++){
-				estim->data.f[estim->total*dim[0] + i + estim->total*j] = y[j];
-			}
+		// Erro da estimativa
+		err = 0;
+		for (int j = 0; j < dim[1]; j++){
+			err += pow(estim->data.f[estim->total*dim[0] + i + estim->total*j] - y[j], 2);
+			// Sobrescrever estimativa no conjunto de teste na memória
+			estim->data.f[estim->total*dim[0] + i + estim->total*j] = y[j];
 		}
-		else {
-			// Erro da estimativa
-			err = 0;
-			for (int j = 0; j < dim[1]; j++){
-				err += pow(estim->data.f[estim->total*dim[0] + i + estim->total*j] - y[j], 2);
-			}
-			err = sqrt(err);
-			// Erro acumulado (sem raiz)
-			*errsum += err;
-		}
+		err = sqrt(err);
+		// Erro acumulado
+		*errsum += err;
 	}
 }

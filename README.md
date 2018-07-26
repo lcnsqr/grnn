@@ -1,7 +1,6 @@
 Implementação da GRNN com diferentes métodos.
 
 * Sequencial em CPU.
-* Paralela em CPU com OpenMP.
 * Paralela em CPU com Pthreads.
 * Paralela em GPU com Cuda.
 
@@ -9,7 +8,6 @@ Para compilar todos os comandos, executar `make all`. Para compilar os comandos 
 
 * Gerador do conjuntos para a equação do calor: `make geradorDifusao`
 * Estimador sequencial usando CPU: `make grnn_cpu`
-* Estimador paralelizado com OpenMP: `make grnn_omp`
 * Estimador paralelizado com pthreads: `make grnn_pthreads`
 * Estimador paralelizado pela GPU: `make grnn_gpu`
 
@@ -19,9 +17,11 @@ Localização das bibliotecas Cuda (linha 37): `CUDA_PATH ?= "/usr/local/cuda"`
 
 ## Utilização
 
-Sem nenhum argumento, os comandos `grnn_{cpu,omp,pthreads,gpu}` apenas estimam o erro das estimativas para o conjunto de  teste. Os conjuntos de treinamento e teste são gerados pelo comando `geradorDifusao` ou `geradorMandelbrot`. São criados os arquivos `train.bin` e `test.bin`, que serão utilizados pelo comando `grnn_{cpu,omp,pthreads,gpu}` para computar as estimativas.
+Sem nenhum argumento, os comandos `grnn_{cpu,pthreads,gpu}` apenas estimam o erro das estimativas para o conjunto de  teste. Os conjuntos de treinamento e teste são gerados pelo comando `geradorDifusao` ou `geradorMandelbrot`. São criados os arquivos `train.bin` e `test.bin`, que serão utilizados pelo comando `grnn_{cpu,pthreads,gpu}` para computar as estimativas.
 
-Um nome de arquivo pode ser informado como argumento ao comando `grnn_{cpu,omp,pthreads,gpu}` para que as estimativas sejam armazenadas neste arquivo.
+Um arquivo para armazenar as estimativas pode ser informado com a opção `-o result.bin` para que as estimativas sejam armazenadas no arquivo `result.bin`.
+
+Um escalar para o parâmetro sigma da regressão pode ser informado com a opção `-s ESCALAR`, onde `ESCALAR` é um valor real positivo. O valor padrão é 1.
 
 ## Conjunto Mandelbrot
 
