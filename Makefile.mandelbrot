@@ -1,5 +1,5 @@
 CC=gcc
-OPTIONS=-lm -fopenmp -O3 `sdl2-config --cflags --libs`
+OPTIONS=-lm -fopenmp `sdl2-config --cflags --libs`
 
 all: geradorMandelbrot verMandelbrot
 
