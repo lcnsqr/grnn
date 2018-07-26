@@ -156,7 +156,7 @@ CCFLAGS     :=
 LDFLAGS     :=
 
 # extra flags
-EXTRA_CCFLAGS     ?= -lm 
+EXTRA_CCFLAGS     ?= -lm -std=c++98
 
 # build flags
 ifeq ($(TARGET_OS),darwin)
