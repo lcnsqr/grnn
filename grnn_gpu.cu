@@ -12,17 +12,14 @@
 #define TEST "test.bin"
 
 // Obter a quantidade de cuda cores por multiprocessador a partir do Compute Capability
-inline int _ConvertSMVer2Cores(int major, int minor)
-{
+inline int _ConvertSMVer2Cores(int major, int minor) {
     // Defines for GPU Architecture types (using the SM version to determine the # of cores per SM
-    typedef struct
-    {
+    typedef struct {
         int SM; // 0xMm (hexidecimal notation), M = SM Major version, and m = SM minor version
         int Cores;
     } sSMtoCores;
 
-    sSMtoCores nGpuArchCoresPerSM[] =
-    {
+    sSMtoCores nGpuArchCoresPerSM[] = {
         { 0x30, 192}, // Kepler Generation (SM 3.0) GK10x class
         { 0x32, 192}, // Kepler Generation (SM 3.2) GK10x class
         { 0x35, 192}, // Kepler Generation (SM 3.5) GK11x class
@@ -40,8 +37,7 @@ inline int _ConvertSMVer2Cores(int major, int minor)
 
     int index = 0;
 
-    while (nGpuArchCoresPerSM[index].SM != -1)
-    {
+    while (nGpuArchCoresPerSM[index].SM != -1) {
         if (nGpuArchCoresPerSM[index].SM == ((major << 4) + minor))
         {
             return nGpuArchCoresPerSM[index].Cores;
@@ -75,26 +71,28 @@ int main(int argc, char **argv){
 	// Identificar dispositivo
 	init_gpu();
 
+	// Cabeçalho do arquivo csv
+	printf("Dispositivo\tGeração\tCapacidade\tMultiprocessadores\tCUDA Cores / MP\tMemória Global\tCUDA Driver\tCUDA Runtime\tDimensões da variável independente\tDimensões da variável dependente\tConjunto de treinamento\tConjunto de teste\tErro médio\n");
+
 	// Hardware
-	printf("Dispositivo: %s\n", deviceProp.name);
-	printf("Geração: ");
+	printf("%s\t", deviceProp.name);
 	switch ( deviceProp.major ){
 		case 3: printf("Kepler"); break;
 		case 5: printf("Maxwell"); break;
 		case 6: printf("Pascal"); break;
 		case 7: printf("Volta"); break;
 	}
-	printf("\n");
-	printf("Capacidade: %d.%d\n", deviceProp.major, deviceProp.minor);
-	printf("Multiprocessadores: %d\n", deviceProp.multiProcessorCount);
-	printf("CUDA Cores / MP: %d\n", _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor));
-	printf("Memória Global: %.0f MB\n", (float)deviceProp.totalGlobalMem/1048576.0f);
+	printf("\t");
+	printf("%d.%d\t", deviceProp.major, deviceProp.minor);
+	printf("%d\t", deviceProp.multiProcessorCount);
+	printf("%d\t", _ConvertSMVer2Cores(deviceProp.major, deviceProp.minor));
+	printf("%.0f MB\t", (float)deviceProp.totalGlobalMem/1048576.0f);
 	// Driver e Runtime
 	int driverVersion = 0, runtimeVersion = 0;
 	cudaDriverGetVersion(&driverVersion);
 	cudaRuntimeGetVersion(&runtimeVersion);
-	printf("CUDA Driver: %d.%d\n", driverVersion/1000, (driverVersion%100)/10);
-	printf("CUDA Runtime: %d.%d\n", runtimeVersion/1000, (runtimeVersion%100)/10);
+	printf("%d.%d\t", driverVersion/1000, (driverVersion%100)/10);
+	printf("%d.%d\t", runtimeVersion/1000, (runtimeVersion%100)/10);
 
 	struct pathSet train, estim;
 	// Carregar arquivo das amostras de treinamento
@@ -103,12 +101,12 @@ int main(int argc, char **argv){
 	// Arquivo de teste
 	pathSetLoad(TEST, &estim);
 
-	printf("Conjunto de treinamento: %d amostras.\n", train.total);
-	printf("Dimensões da variável independente: %d\n", train.dim[0]);
-	printf("Dimensões da variável dependente:   %d\n", train.dim[1]);
+	printf("%d\t", train.dim[0]);
+	printf("%d\t", train.dim[1]);
+	printf("%d\t", train.total);
+	printf("%d\t", estim.total);
 
 	// Calcular o erro ou salvar um arquivo com o resultado
-	printf("Estimando %d amostras de teste...\n", estim.total);
 	// Soma dos erros das estimativas
 	float errsum = 0;
 
@@ -116,12 +114,11 @@ int main(int argc, char **argv){
 	estimar(&train, &estim, ss, &errsum);
 
 	// Exibir erro médio
-	printf("Erro médio: %f\n", errsum / (float)estim.total);
+	printf("%f\n", errsum / (float)estim.total);
 
 	// Salvar resultado no arquivo informado
 	if (outfile != NULL ){
 		pathSetSave(outfile, &estim);
-		printf("Resultado salvo em %s\n", outfile);
 	}
 
 	return 0;
