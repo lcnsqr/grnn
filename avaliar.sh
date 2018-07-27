@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Script para preparar e executar o teste 
 # de performance da GRNN paralela em GPU
@@ -11,9 +11,11 @@ make geradorDifusao grnn_gpu SMS=35
 ./geradorDifusao -t 8388608 -e 1024 -d 6
 
 # Localizar nvprof
+PATH=$PATH:/usr/local/cuda/bin
 NVPROF=`which nvprof`
-if [ -n "$NVPROF" ]; then 
-	NVPROF="/usr/bin/nvprof"; 
+if [ ! -x "$NVPROF" ]; then 
+	echo "Comando nvprof não localizado"
+	exit 1
 fi
 
 # Rodar estimador no conjunto de teste
