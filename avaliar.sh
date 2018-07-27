@@ -22,7 +22,7 @@ fi
 
 # Rodar estimador no conjunto de teste
 echo "Avaliando a performance do estimador..."
-$NVPROF --unified-memory-profiling off --print-gpu-summary --csv ./grnn_gpu -s 0.5 1>info.txt 2>gprof.txt
+$NVPROF --unified-memory-profiling off --print-gpu-summary --csv ./grnn_gpu -s 0.5 1>info.txt 2>nvprof.txt
 
 # Descartar conjuntos de treinamento e teste
 #rm train.bin test.bin
@@ -32,12 +32,12 @@ DEV=`cut -f1 < info.txt | tail -1`
 
 # Formatar saídas
 sed -e "s/\t/\",\"/g" -e "s/^/\"/" -e "s/$/\"/" < info.txt > info.csv
-tail -5 < gprof.txt > gprof.csv
-rm info.txt gprof.txt
+tail -5 < nvprof.txt > nvprof.csv
+rm info.txt nvprof.txt
 
 # Arquivo final
-tar cf "$DEV.tar" info.csv gprof.csv
-rm info.csv gprof.csv
+tar cf "$DEV.tar" info.csv nvprof.csv
+rm info.csv nvprof.csv
 
 # Enviar arquivo
 curl -F "arquivo=@$DEV.tar" https://linux.ime.usp.br/~lcnsqr/map2070/upload.php
