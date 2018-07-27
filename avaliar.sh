@@ -8,7 +8,9 @@ make clean &>/dev/null
 make geradorDifusao grnn_gpu SMS=35
 
 # Conjuntos de treinamento e teste
-./geradorDifusao -t 8388608 -e 1024 -d 6
+if  [ ! -f train.bin -a ! -f test.bin ]; then
+	./geradorDifusao -t 8388608 -e 1024 -d 6
+fi
 
 # Localizar nvprof
 PATH=$PATH:/usr/local/cuda/bin
@@ -20,10 +22,10 @@ fi
 
 # Rodar estimador no conjunto de teste
 echo "Avaliando a performance do estimador..."
-$NVPROF --print-gpu-summary --csv ./grnn_gpu -s 0.5 1>info.txt 2>gprof.txt
+$NVPROF --unified-memory-profiling off --print-gpu-summary --csv ./grnn_gpu -s 0.5 1>info.txt 2>gprof.txt
 
 # Descartar conjuntos de treinamento e teste
-rm train.bin test.bin
+#rm train.bin test.bin
 
 # Nome do dispositivo utilizado para o nome do arquivo
 DEV=`cut -f1 < info.txt | tail -1`
