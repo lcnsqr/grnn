@@ -10,9 +10,15 @@ make geradorDifusao grnn_gpu SMS=35
 # Conjuntos de treinamento e teste
 ./geradorDifusao -t 8388608 -e 1024 -d 6
 
+# Localizar nvprof
+NVPROF=`which nvprof`
+if [ -n "$NVPROF" ]; then 
+	NVPROF="/usr/bin/nvprof"; 
+fi
+
 # Rodar estimador no conjunto de teste
 echo "Avaliando a performance do estimador..."
-nvprof --print-gpu-summary --csv ./grnn_gpu -s 0.5 1>info.txt 2>gprof.txt
+$NVPROF --print-gpu-summary --csv ./grnn_gpu -s 0.5 1>info.txt 2>gprof.txt
 
 # Descartar conjuntos de treinamento e teste
 rm train.bin test.bin
