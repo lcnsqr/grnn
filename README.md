@@ -1,7 +1,7 @@
 Implementação da GRNN com diferentes métodos.
 
-* Sequencial em CPU.
-* Paralela em CPU com Pthreads.
+* Sequencial em CPU;
+* Paralela em CPU com Pthreads;
 * Paralela em GPU com Cuda.
 
 Para compilar todos os comandos, executar `make all`. Para compilar os comandos individualmente:
