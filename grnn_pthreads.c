@@ -13,20 +13,18 @@
 // Quantidade de threads
 #define NUM_THREADS	8
 
-// Estrutura para o contexto de cada thread que computa 
-// uma parcial de uma amostra do conjunto de treinamento
-struct TrainThread {
-	// Endereço do donjunto de treinamento
+// Estrutura para o contexto de cada thread que 
+// computa uma parcial do conjunto de treinamento
+struct TrainPart {
+	// Endereço da parte donjunto de treinamento
 	float *train;
-	// Endereço do conjunto de treinamento
+	// Endereço da parte donjunto de treinamento
 	// com as variáveis dependentes
 	float *train_y;
 	// Total de pares no treinamento
 	unsigned int total;
-	// Índice do bloco
-	unsigned int block;
-	// Índice do thread
-	unsigned int thread;
+	// Total de pares no treinamento parcial
+	unsigned int totalPart;
 	// Dimensões da variável independente e dependente
 	unsigned int *dim;
 	// Variável independente lida
@@ -38,30 +36,31 @@ struct TrainThread {
 	float *denom;
 };
 
-// Thread para computar uma amostra do conjunto de treinamento
-void *estimThread(void *voidTrainThread){
+// Thread para computar parcial do conjunto de treinamento
+void *estimPart(void *voidTrainPart){
 	// Estrutura da parcial do treinamento
-	struct TrainThread *tp = (struct TrainThread*)voidTrainThread;
+	struct TrainPart *tp = (struct TrainPart*)voidTrainPart;
 	// Fator comum para cada amostra
 	float f;
 	// Quadrado da distância euclidiana entre a amostra e o estimando
 	float d;
-	// Índice da amostra no conjunto de treinamento
-	unsigned int i = tp->block * NUM_THREADS + tp->thread;
-	// Computar o fator comum da i-esima amostra
-	d = 0;
-	for (int j = 0; j < tp->dim[0]; j++){
-		d += pow(tp->train[i + j * tp->total] - tp->x[j], 2);
+	// Iterar em cada amostra de treinamento para o conjunto parcial
+	for (int i = 0; i < tp->totalPart; i++){
+		// Computar o fator comum da i-esima amostra
+		d = 0;
+		for (int j = 0; j < tp->dim[0]; j++){
+			d += pow(tp->train[i + j * tp->total] - tp->x[j], 2);
+		}
+		f = exp( - d / tp->s );
+		// Iterar para cada componente de y
+		for (int c = 0; c < tp->dim[1]; c++){
+			// Numerador da fração para o c-ésimo componente
+			tp->numer[c] += tp->train_y[c * tp->total + i] * f;
+			// Denominador da fração
+			tp->denom[c] += f;
+		}
 	}
-	f = exp( - d / tp->s );
-	// Iterar para cada componente de y
-	for (int c = 0; c < tp->dim[1]; c++){
-		// Numerador da fração para o c-ésimo componente
-		tp->numer[c] += tp->train_y[c * tp->total + i] * f;
-		// Denominador da fração
-		tp->denom[c] += f;
-	}
-	pthread_exit((void*)voidTrainThread);
+	pthread_exit((void*)voidTrainPart);
 }
 
 // Estimar a variável dependente
@@ -73,7 +72,7 @@ void *estimThread(void *voidTrainThread){
 // s: Parâmetro da regressão
 void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s){
 	// Contexto para cada thread
-	struct TrainThread tp[NUM_THREADS];
+	struct TrainPart tp[NUM_THREADS];
 	// Acumuladores do numerador e denominador 
 	// do estimador para cada thread
 	float *aNumer[NUM_THREADS];
@@ -87,14 +86,44 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 			aNumer[t][c] = 0;
 			aDenom[t][c] = 0;
 		}
-		tp[t].train = train;
-		tp[t].train_y = &train[total*dim[0]];
+		tp[t].train = &train[t*(total/NUM_THREADS)];
+		tp[t].train_y = &train[total*dim[0] + t*(total/NUM_THREADS)];
 		tp[t].total = total;
+		tp[t].totalPart = total / NUM_THREADS;
 		tp[t].dim = dim;
 		tp[t].x = x;
 		tp[t].s = s;
 		tp[t].numer = aNumer[t];
 		tp[t].denom = aDenom[t];
+	}
+
+	// Threads para cada subconjunto de treinamento
+   pthread_t thread[NUM_THREADS];
+   pthread_attr_t attr;
+   int pthread_return;
+   void *pthread_status;
+
+	// Iniciar threads
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+	for(int t = 0; t < NUM_THREADS; t++){
+		pthread_return = pthread_create(&thread[t], &attr, estimPart, (void *)&tp[t]); 
+		if (pthread_return) {
+			printf("ERROR; return code from pthread_create() is %d\n", pthread_return);
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	// Liberar atributo e aguardar threads
+	pthread_attr_destroy(&attr);
+	for(int t = 0; t < NUM_THREADS; t++){
+		pthread_return = pthread_join(thread[t], &pthread_status);
+		if (pthread_return){
+			printf("ERROR; return code from pthread_join() is %d\n", pthread_return);
+			exit(EXIT_FAILURE);
+		}
+		//printf("Finalizado thread %d\n",t);
 	}
 
 	// Acumuladores do numerador e denominador 
@@ -105,59 +134,16 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 		numer[c] = 0;
 		denom[c] = 0;
 	}
-
-	// Threads em cada bloco
-   pthread_t thread[NUM_THREADS];
-   pthread_attr_t attr;
-   int pthread_return;
-   void *pthread_status;
-
-	// Executar em blocos de NUM_THREADS threads
-	for (int b = 0; b < total / NUM_THREADS; b++ ){
-
-		// Iniciar threads
-		pthread_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
-		for(int t = 0; t < NUM_THREADS; t++){
-			// Índice do bloco
-			tp[t].block = b;
-			// Índice do thread
-			tp[t].thread = t;
-			pthread_return = pthread_create(&thread[t], &attr, estimThread, (void *)&tp[t]); 
-			if (pthread_return) {
-				printf("ERROR; return code from pthread_create() is %d\n", pthread_return);
-				exit(EXIT_FAILURE);
-			}
-		}
-
-		// Liberar atributo e aguardar threads
-		pthread_attr_destroy(&attr);
-		for(int t = 0; t < NUM_THREADS; t++){
-			pthread_return = pthread_join(thread[t], &pthread_status);
-			if (pthread_return){
-				printf("ERROR; return code from pthread_join() is %d\n", pthread_return);
-				exit(EXIT_FAILURE);
-			}
-			//printf("Finalizado thread %d\n",t);
-		}
-
-		// Somar as parciais produzidas pelo bloco
-		for (int t = 0; t < NUM_THREADS; t++){
-			for (int c = 0; c < dim[1]; c++){
-				numer[c] += aNumer[t][c];
-				denom[c] += aDenom[t][c];
-				aNumer[t][c] = 0;
-				aDenom[t][c] = 0;
-			}
-		}
-	}
-	// Liberar memória usada pelas parciais dos threads
 	for (int t = 0; t < NUM_THREADS; t++){
+		// Estimativa com verificação de divisão por zero
+		// para cada dimensão da variável dependente
+		for (int c = 0; c < dim[1]; c++){
+			numer[c] += aNumer[t][c];
+			denom[c] += aDenom[t][c];
+		}
 		free(aNumer[t]);
 		free(aDenom[t]);
 	}
-
 	// Estimativa com verificação de divisão por zero
 	// para cada dimensão da variável dependente
 	for (int c = 0; c < dim[1]; c++){
