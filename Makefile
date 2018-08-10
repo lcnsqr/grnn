@@ -286,13 +286,13 @@ grnn_gpu: grnn_gpu.o
 #	$(EXEC) cp $@ ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)
 
 geradorDifusao: geradorDifusao.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) geradorDifusao.c
+	gcc geradorDifusao.c -o $@ -fopenmp -lm 
 
 grnn_pthreads: grnn_pthreads.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg -pthread grnn_pthreads.c
+	gcc grnn_pthreads.c -o $@ -pthread -lm 
 
 grnn_cpu: grnn_cpu.c
-	$(HOST_COMPILER) -o $@ $(EXTRA_CCFLAGS) -pg grnn_cpu.c
+	gcc grnn_cpu.c -o $@ -lm 
 
 run: build
 	$(EXEC) ./grnn_gpu
