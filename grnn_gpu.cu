@@ -4,7 +4,6 @@
 #include <string.h>
 #include "pathio.h"
 #include "grnn_gpu.h"
-#include <cuda_runtime.h>
 
 // Arquivo das amostras
 #define TRAIN "train.bin"
