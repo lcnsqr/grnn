@@ -115,3 +115,44 @@ void pathSetSave(const char* filename, struct pathSet *ps){
 	// Fechar ponteiro do arquivo
 	fclose(fp);
 }
+
+void pathSetLoadStdin(struct pathSet *ps){
+	// Buffer para ler o formato 
+	int *buf = (int*)malloc(4);
+	// Tipo dos dados
+	fread(buf, 4, 1, stdin);
+	ps->type = (*buf & 0x000000FF);
+	free(buf);
+	// Quantidade de caminhos
+	fread(&ps->total, 4, 1, stdin);
+	// Número de vértices no caminho
+	fread(&ps->vertices, 4, 1, stdin);
+	// Número de elementos em cada vértice
+	ps->dim = (unsigned int*)malloc(4 * ps->vertices);
+	fread(ps->dim, 4, ps->vertices, stdin);
+	// Total de valores em cada componente de cada vértice
+	fread(&ps->size, 4, 1, stdin);
+	// Ler dados
+	switch ( ps->type ){
+		case 0x01:
+			// unsigned char
+			ps->data.c = (char*)malloc(ps->size);
+			fread(ps->data.c, ps->size, 1, stdin);
+		break;
+		case 0x04:
+			// integer
+			ps->data.i = (int*)malloc(ps->size * sizeof(int));
+			fread(ps->data.i, ps->size * sizeof(int), 1, stdin);
+		break;
+		case 0x0f:
+			// float
+			ps->data.f = (float*)malloc(ps->size * sizeof(float));
+			fread(ps->data.f, ps->size * sizeof(float), 1, stdin);
+		break;
+		case 0x0d:
+			// double
+			ps->data.d = (double*)malloc(ps->size * sizeof(double));
+			fread(ps->data.d, ps->size * sizeof(double), 1, stdin);
+		break;
+	}
+}
