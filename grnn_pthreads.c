@@ -10,9 +10,6 @@
 // Arquivos de teste
 #define TEST "test.bin"
 
-// Quantidade de threads
-#define NUM_THREADS	8
-
 // Estrutura para o contexto de cada thread que 
 // computa uma parcial do conjunto de treinamento
 struct TrainPart {
@@ -70,15 +67,16 @@ void *estimPart(void *voidTrainPart){
 // x: Variável independente lida
 // y: Estimativa da variável dependente
 // s: Parâmetro da regressão
-void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s){
+// threads: Quantidade de threads
+void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s, int threads){
 	// Contexto para cada thread
-	struct TrainPart tp[NUM_THREADS];
+	struct TrainPart *tp = malloc(threads*sizeof(struct TrainPart));
 	// Acumuladores do numerador e denominador 
 	// do estimador para cada thread
-	float *aNumer[NUM_THREADS];
-	float *aDenom[NUM_THREADS];
+	float **aNumer = malloc(threads*sizeof(float*));
+	float **aDenom = malloc(threads*sizeof(float*));
 	// Configurar contexto para cada thread
-	for (int t = 0; t < NUM_THREADS; t++){
+	for (int t = 0; t < threads; t++){
 		// Acumuladores para cada dimensão da variável dependente
 		aNumer[t] = (float*)malloc(dim[1]*sizeof(float));
 		aDenom[t] = (float*)malloc(dim[1]*sizeof(float));
@@ -86,10 +84,10 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 			aNumer[t][c] = 0;
 			aDenom[t][c] = 0;
 		}
-		tp[t].train = &train[t*(total/NUM_THREADS)];
-		tp[t].train_y = &train[total*dim[0] + t*(total/NUM_THREADS)];
+		tp[t].train = &train[t*(total/threads)];
+		tp[t].train_y = &train[total*dim[0] + t*(total/threads)];
 		tp[t].total = total;
-		tp[t].totalPart = total / NUM_THREADS;
+		tp[t].totalPart = total / threads;
 		tp[t].dim = dim;
 		tp[t].x = x;
 		tp[t].s = s;
@@ -98,7 +96,7 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 	}
 
 	// Threads para cada subconjunto de treinamento
-   pthread_t thread[NUM_THREADS];
+	pthread_t *thread = malloc(threads*sizeof(pthread_t));
    pthread_attr_t attr;
    int pthread_return;
    void *pthread_status;
@@ -107,7 +105,7 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-	for(int t = 0; t < NUM_THREADS; t++){
+	for(int t = 0; t < threads; t++){
 		pthread_return = pthread_create(&thread[t], &attr, estimPart, (void *)&tp[t]); 
 		if (pthread_return) {
 			printf("ERROR; return code from pthread_create() is %d\n", pthread_return);
@@ -117,7 +115,7 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 
 	// Liberar atributo e aguardar threads
 	pthread_attr_destroy(&attr);
-	for(int t = 0; t < NUM_THREADS; t++){
+	for(int t = 0; t < threads; t++){
 		pthread_return = pthread_join(thread[t], &pthread_status);
 		if (pthread_return){
 			printf("ERROR; return code from pthread_join() is %d\n", pthread_return);
@@ -134,7 +132,7 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 		numer[c] = 0;
 		denom[c] = 0;
 	}
-	for (int t = 0; t < NUM_THREADS; t++){
+	for (int t = 0; t < threads; t++){
 		// Estimativa com verificação de divisão por zero
 		// para cada dimensão da variável dependente
 		for (int c = 0; c < dim[1]; c++){
@@ -144,6 +142,11 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 		free(aNumer[t]);
 		free(aDenom[t]);
 	}
+	free(aNumer);
+	free(aDenom);
+	free(thread);
+	free(tp);
+
 	// Estimativa com verificação de divisão por zero
 	// para cada dimensão da variável dependente
 	for (int c = 0; c < dim[1]; c++){
@@ -166,8 +169,9 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
  * estim: Conjunto de teste
  * ss: Escalar para o parâmetro sigma
  * errsum: soma do erro
+ * threads: Quantidade de threads
  */
-void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum){
+void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum, int threads){
 	// Vetor da variável independente 
 	float *x = (float*)malloc(sizeof(float)*train->dim[0]);
 	// Vetor da estimativa 
@@ -189,7 +193,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 			x[j] = estim->data.f[i + estim->total * j];
 		}
 		// Gerar estimativa
-		estimativa(train->data.f, train->total, dim, x, y, s);
+		estimativa(train->data.f, train->total, dim, x, y, s, threads);
 		// Erro da estimativa
 		err = 0;
 		for (int j = 0; j < dim[1]; j++){
@@ -209,6 +213,9 @@ int main(int argc, char **argv){
 	// Opções da linha de comando
 	const char* outfile = NULL;
 	float ss = 1;
+	// Quantidade de threads
+	int threads = 1;
+
 	for(int i = 1; i < argc; i++){
 		switch (argv[i][1]){
 		case 'o':
@@ -218,6 +225,10 @@ int main(int argc, char **argv){
 		case 's':
 			// Escalar do parâmetro sigma
 			ss = atof(argv[i+1]);
+		break;
+		case 'p':
+			// Quantidade de threads
+			threads = atoi(argv[i+1]);
 		break;
 		}
 	}
@@ -234,13 +245,13 @@ int main(int argc, char **argv){
 	printf("Dimensões da variável dependente:   %d\n", train.dim[1]);
 
 	// Calcular o erro ou salvar um arquivo com o resultado
-	printf("Estimando %d amostras de teste...\n", estim.total);
+	printf("Estimando %d amostras de teste em %d thread(s)...\n", estim.total, threads);
 
 	// Soma dos erros das estimativas
 	float errsum = 0;
 
 	// Gerar estimativas
-	estimar(&train, &estim, ss, &errsum);
+	estimar(&train, &estim, ss, &errsum, threads);
 
 	// Exibir erro médio
 	printf("Erro médio: %f\n", errsum / (float)estim.total);
