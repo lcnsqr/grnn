@@ -4,6 +4,10 @@
 #include <math.h>
 #include <string.h>
 #include "pathio.h"
+#include <time.h>
+
+// Para calcular o tempo gasto
+#define BILLION 1e9
 
 // Arquivo das amostras
 #define TRAIN "train.bin"
@@ -250,8 +254,19 @@ int main(int argc, char **argv){
 	// Soma dos erros das estimativas
 	float errsum = 0;
 
+	// Determinar o tempo gasto
+	struct timespec requestStart, requestEnd;
+	// Início da contagem
+	clock_gettime(CLOCK_REALTIME, &requestStart);
+
 	// Gerar estimativas
 	estimar(&train, &estim, ss, &errsum, threads);
+
+	// Fim da contagem
+	clock_gettime(CLOCK_REALTIME, &requestEnd);
+	// Tempo gasto
+	double tempo = ( requestEnd.tv_sec - requestStart.tv_sec ) + ( requestEnd.tv_nsec - requestStart.tv_nsec ) / BILLION;
+	printf("Tempo gasto: %lf\n", tempo);
 
 	// Exibir erro médio
 	printf("Erro médio: %f\n", errsum / (float)estim.total);

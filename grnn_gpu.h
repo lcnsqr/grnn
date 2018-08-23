@@ -1,3 +1,6 @@
+// Para calcular o tempo gasto
+#define BILLION 1e9
+
 // Definições do dispositivo
 cudaDeviceProp deviceProp;
 
@@ -69,9 +72,10 @@ void init_gpu(){
  * train: Conjunto de treinamento
  * estim: Conjunto de teste
  * ss: Escalar para o parâmetro sigma
- * errsum: soma do erro
+ * errsum: Soma do erro
+ * tempo: Contagem do tempo gasto
  */
-void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum){
+void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum, double *tempo){
 	// Registrar conjunto de treinamento na memória para 
 	// evitar paginação e agilizar o acesso pela GPU ao
 	// mapear a memória entre o host e a memória da GPU
@@ -135,6 +139,11 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 	// Índice de parcela
 	unsigned int p;
 
+	// Determinar o tempo gasto
+	struct timespec requestStart, requestEnd;
+	// Início da contagem
+	clock_gettime(CLOCK_REALTIME, &requestStart);
+
 	// Iterar em todo o conjunto a estimar
 	for (int i = 0; i < estim->total; i++){
 		// Copiar variável independente a ser estimada pela GPU
@@ -181,4 +190,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 		// Erro acumulado
 		*errsum += err;
 	}
+	// Fim da contagem do tempo gasto
+	clock_gettime(CLOCK_REALTIME, &requestEnd);
+	*tempo = ( requestEnd.tv_sec - requestStart.tv_sec ) + ( requestEnd.tv_nsec - requestStart.tv_nsec ) / BILLION;
 }
