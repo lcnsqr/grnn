@@ -45,7 +45,7 @@ void pathSetLoad(const char* filename, struct pathSet *ps){
 	// Número de elementos em cada vértice
 	ps->dim = (unsigned int*)malloc(4 * ps->vertices);
 	fread(ps->dim, 4, ps->vertices, fp);
-	// Total de valores em cada componente de cada vértice
+	// Total em bytes do conjunto
 	fread(&ps->size, 4, 1, fp);
 	// Ler dados
 	switch ( ps->type ){
@@ -56,18 +56,18 @@ void pathSetLoad(const char* filename, struct pathSet *ps){
 		break;
 		case 0x04:
 			// integer
-			ps->data.i = (int*)malloc(ps->size * sizeof(int));
-			fread(ps->data.i, ps->size * sizeof(int), 1, fp);
+			ps->data.i = (int*)malloc(ps->size);
+			fread(ps->data.i, ps->size, 1, fp);
 		break;
 		case 0x0f:
 			// float
-			ps->data.f = (float*)malloc(ps->size * sizeof(float));
-			fread(ps->data.f, ps->size * sizeof(float), 1, fp);
+			ps->data.f = (float*)malloc(ps->size);
+			fread(ps->data.f, ps->size, 1, fp);
 		break;
 		case 0x0d:
 			// double
-			ps->data.d = (double*)malloc(ps->size * sizeof(double));
-			fread(ps->data.d, ps->size * sizeof(double), 1, fp);
+			ps->data.d = (double*)malloc(ps->size);
+			fread(ps->data.d, ps->size, 1, fp);
 		break;
 	}
 	// Liberar arquivo aberto
@@ -91,7 +91,7 @@ void pathSetSave(const char* filename, struct pathSet *ps){
 	fwrite(&ps->vertices, 4, 1, fp);
 	// Número de elementos em cada vértice
 	fwrite(ps->dim, 4, ps->vertices, fp);
-	// Total de valores em cada componente de cada vértice
+	// Total em bytes do conjunto
 	fwrite(&ps->size, 4, 1, fp);
 	// Escrever dados
 	switch ( ps->type ){
@@ -101,15 +101,15 @@ void pathSetSave(const char* filename, struct pathSet *ps){
 		break;
 		case 0x04:
 			// integer
-			fwrite(ps->data.i, ps->size * sizeof(int), 1, fp);
+			fwrite(ps->data.i, ps->size, 1, fp);
 		break;
 		case 0x0f:
 			// float
-			fwrite(ps->data.f, ps->size * sizeof(float), 1, fp);
+			fwrite(ps->data.f, ps->size, 1, fp);
 		break;
 		case 0x0d:
 			// double
-			fwrite(ps->data.d, ps->size * sizeof(double), 1, fp);
+			fwrite(ps->data.d, ps->size, 1, fp);
 		break;
 	}
 	// Fechar ponteiro do arquivo
@@ -130,7 +130,7 @@ void pathSetLoadStdin(struct pathSet *ps){
 	// Número de elementos em cada vértice
 	ps->dim = (unsigned int*)malloc(4 * ps->vertices);
 	fread(ps->dim, 4, ps->vertices, stdin);
-	// Total de valores em cada componente de cada vértice
+	// Total em bytes do conjunto
 	fread(&ps->size, 4, 1, stdin);
 	// Ler dados
 	switch ( ps->type ){
@@ -141,18 +141,18 @@ void pathSetLoadStdin(struct pathSet *ps){
 		break;
 		case 0x04:
 			// integer
-			ps->data.i = (int*)malloc(ps->size * sizeof(int));
-			fread(ps->data.i, ps->size * sizeof(int), 1, stdin);
+			ps->data.i = (int*)malloc(ps->size);
+			fread(ps->data.i, ps->size, 1, stdin);
 		break;
 		case 0x0f:
 			// float
-			ps->data.f = (float*)malloc(ps->size * sizeof(float));
-			fread(ps->data.f, ps->size * sizeof(float), 1, stdin);
+			ps->data.f = (float*)malloc(ps->size);
+			fread(ps->data.f, ps->size, 1, stdin);
 		break;
 		case 0x0d:
 			// double
-			ps->data.d = (double*)malloc(ps->size * sizeof(double));
-			fread(ps->data.d, ps->size * sizeof(double), 1, stdin);
+			ps->data.d = (double*)malloc(ps->size);
+			fread(ps->data.d, ps->size, 1, stdin);
 		break;
 	}
 }
