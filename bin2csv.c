@@ -37,22 +37,22 @@ int main(int argc, char **argv){
 	// Extrair os pares de variáveis
 	for (int i = 0; i < input.total; i++){
 		// Variável independente
-		for (int d = 0; d < input.dim[0]; d++){
-			if ( d == input.dim[0] - 1 ){
-				printf("%f", input.data.f[i + d * input.dim[0]]);
+		for (int j = 0; j < input.dim[0]; j++){
+			if ( j == input.dim[0] - 1 ){
+				printf("%.16f", input.data.f[i + j * input.total]);
 			}
 			else {
-				printf("%f,", input.data.f[i + d * input.dim[0]]);
+				printf("%.16f,", input.data.f[i + j * input.total]);
 			}
 		}
-		printf(" -> ");
+		printf("\n");
 		// Variável dependente
-		for (int d = 0; d < input.dim[1]; d++){
-			if ( d == input.dim[1] - 1 ){
-				printf("%f", input.data.f[input.total * input.dim[0] + i + d * input.dim[1]]);
+		for (int j = 0; j < input.dim[1]; j++){
+			if ( j == input.dim[1] - 1 ){
+				printf("%.16f", input.data.f[input.total * input.dim[0] + i + j * input.total]);
 			}
 			else {
-				printf("%f,", input.data.f[input.total * input.dim[0] + i + d * input.dim[1]]);
+				printf("%.16f,", input.data.f[input.total * input.dim[0] + i + j * input.total]);
 			}
 		}
 		printf("\n");
