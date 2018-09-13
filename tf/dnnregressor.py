@@ -17,18 +17,19 @@ csv_header = collections.OrderedDict([
     ("i1", [0.0]),
     ("i2", [0.0]),
     ("i3", [0.0]),
-    ("d0", [0.0])
+    ("d0", [0.0]),
+    ("d1", [0.0]),
+    ("d2", [0.0]),
+    ("d3", [0.0])
 ])
 types = collections.OrderedDict((key, type(value[0])) for key, value in csv_header.items())
 
-def dataset(y_name="d0"):
+def dataset():
   """Carrega os conjuntos amostrais de treinamento e teste.
 
   O conjunto amostral produz um par (features_dict, label).
 
-  Args:
-    y_name: O nome da coluna da variável dependente ("label"), unidimensional.
-  Returna:
+  Retorna:
     Um par (train,test) de conjuntos amostrais
   """
   # Conversão das linhas do arquivo CSV
@@ -39,10 +40,17 @@ def dataset(y_name="d0"):
 
     # Converte as chaves e itens para um dict.
     pairs = zip(csv_header.keys(), items)
+
+    # Features
     features_dict = dict(pairs)
 
-    # Remover o label de features_dict
-    label = features_dict.pop(y_name)
+    # Label
+    label_list = []
+    label_list.append(features_dict.pop("d0"))
+    label_list.append(features_dict.pop("d1"))
+    label_list.append(features_dict.pop("d2"))
+    label_list.append(features_dict.pop("d3"))
+    label = tf.convert_to_tensor(label_list)
 
     return features_dict, label
 
@@ -58,17 +66,11 @@ def main(argv):
 
   # Construir a função de entrada do treinamento
   def input_train():
-    return (
-        # Shuffling with a buffer larger than the data set ensures
-        # that the examples are well mixed.
-        train.shuffle(1000).batch(128)
-        # Repeat forever
-        .repeat().make_one_shot_iterator().get_next())
+    return (train.shuffle(100000).batch(128).repeat().make_one_shot_iterator().get_next())
 
   # Construir a função de entrada da validação
   def input_test():
-    return (test.shuffle(1000).batch(128)
-            .make_one_shot_iterator().get_next())
+    return (test.shuffle(1000).batch(128).make_one_shot_iterator().get_next())
 
   feature_columns = [
       tf.feature_column.numeric_column(key="i0"),
@@ -77,8 +79,8 @@ def main(argv):
       tf.feature_column.numeric_column(key="i3"),
   ]
 
-  # Estimador DNNRegressor, com duas camadas internas de 2x20 unidades
-  model = tf.estimator.DNNRegressor(hidden_units=[20, 20], feature_columns=feature_columns, model_dir="model")
+  # Estimador DNNRegressor, com duas camadas internas de 2x4 unidades
+  model = tf.estimator.DNNRegressor(hidden_units=[4,4], feature_columns=feature_columns, label_dimension=4, model_dir="model")
 
   # Treinar o modelo
   model.train(input_fn=input_train, steps=STEPS)

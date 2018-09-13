@@ -44,4 +44,5 @@ with open(filename, "rb") as dataBin:
             dataBin.seek(24 + dataDict['dim'][0] * dataDict['total'] * 4 + i * 4 + c * dataDict['total'] * 4)
             varDep.append(struct.unpack('f', dataBin.read(4))[0])
         # Escrever linha csv
-        wr.writerow(varInd+[varDep[-1]])
+        #wr.writerow(varInd+[varDep[-1]])
+        wr.writerow(varInd+varDep)
