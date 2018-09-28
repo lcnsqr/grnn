@@ -186,7 +186,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 			// Sobrescrever estimativa no conjunto de teste na memória
 			estim->data.f[estim->total*dim[0] + i + estim->total*j] = y[j];
 		}
-		err = sqrt(err);
+		//err = sqrt(err);
 		// Erro acumulado
 		*errsum += err;
 	}

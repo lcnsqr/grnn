@@ -119,8 +119,8 @@ int main(int argc, char **argv){
 	// Tempo gasto
 	printf("%lf\t", tempo);
 
-	// Exibir erro médio
-	printf("%f\n", errsum / (float)estim.total);
+	// Exibir erro médio (RMSE)
+	printf("%f\n", sqrt(errsum / (float)estim.total));
 
 	// Salvar resultado no arquivo informado
 	if (outfile != NULL ){
