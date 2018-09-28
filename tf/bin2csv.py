@@ -31,6 +31,13 @@ with open(filename, "rb") as dataBin:
         dataDict['dim'].append(int.from_bytes(dataBin.read(4), byteorder='little'))
     # Tamanho do conjunto em bytes
     dataDict['size'] = int.from_bytes(dataBin.read(4), byteorder='little')
+    # Cabeçalho do csv
+    header = []
+    for c in range(dataDict['dim'][0]):
+        header.append("x"+str(c))
+    for c in range(dataDict['dim'][1]):
+        header.append("y"+str(c))
+    wr.writerow(header)
     # Par amostral
     varInd = []
     varDep = []
@@ -44,5 +51,4 @@ with open(filename, "rb") as dataBin:
             dataBin.seek(24 + dataDict['dim'][0] * dataDict['total'] * 4 + i * 4 + c * dataDict['total'] * 4)
             varDep.append(struct.unpack('f', dataBin.read(4))[0])
         # Escrever linha csv
-        #wr.writerow(varInd+[varDep[-1]])
         wr.writerow(varInd+varDep)
