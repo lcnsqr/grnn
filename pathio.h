@@ -156,3 +156,40 @@ void pathSetLoadStdin(struct pathSet *ps){
 		break;
 	}
 }
+
+void pathSetSaveStdout(struct pathSet *ps){
+	// Buffer para ler o formato 
+	int *buf = (int*)malloc(4);
+	*buf = ps->type;
+	// Escrever Magic number 
+	fwrite(buf, 4, 1, stdout);
+	// Liberar buffer
+	free(buf);
+	// Quantidade de caminhos
+	fwrite(&ps->total, 4, 1, stdout);
+	// Número de vértices no caminho
+	fwrite(&ps->vertices, 4, 1, stdout);
+	// Número de elementos em cada vértice
+	fwrite(ps->dim, 4, ps->vertices, stdout);
+	// Total em bytes do conjunto
+	fwrite(&ps->size, 4, 1, stdout);
+	// Escrever dados
+	switch ( ps->type ){
+		case 0x01:
+			// unsigned char
+			fwrite(ps->data.c, ps->size, 1, stdout);
+		break;
+		case 0x04:
+			// integer
+			fwrite(ps->data.i, ps->size, 1, stdout);
+		break;
+		case 0x0f:
+			// float
+			fwrite(ps->data.f, ps->size, 1, stdout);
+		break;
+		case 0x0d:
+			// double
+			fwrite(ps->data.d, ps->size, 1, stdout);
+		break;
+	}
+}
