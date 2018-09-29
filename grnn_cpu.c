@@ -95,7 +95,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 			// Sobrescrever estimativa no conjunto de teste na memória
 			estim->data.f[estim->total*dim[0] + i + estim->total*j] = y[j];
 		}
-		err = sqrt(err);
+		//err = sqrt(err);
 		// Erro acumulado
 		*errsum += err;
 	}
@@ -140,7 +140,7 @@ int main(int argc, char **argv){
 	estimar(&train, &estim, ss, &errsum);
 
 	// Exibir erro médio
-	printf("Erro médio: %f\n", errsum / (float)estim.total);
+	printf("Erro RMSE: %f\n", sqrt(errsum / (float)estim.total));
 
 	// Salvar resultado no arquivo informado
 	if (outfile != NULL ){
