@@ -244,13 +244,6 @@ int main(int argc, char **argv){
 	// Arquivo de teste
 	pathSetLoad(TEST, &estim);
 
-	printf("Conjunto de treinamento: %d amostras.\n", train.total);
-	printf("Dimensões da variável independente: %d\n", train.dim[0]);
-	printf("Dimensões da variável dependente:   %d\n", train.dim[1]);
-
-	// Calcular o erro ou salvar um arquivo com o resultado
-	printf("Estimando %d amostras de teste em %d thread(s)...\n", estim.total, threads);
-
 	// Soma dos erros das estimativas
 	float errsum = 0;
 
@@ -266,16 +259,17 @@ int main(int argc, char **argv){
 	clock_gettime(CLOCK_REALTIME, &requestEnd);
 	// Tempo gasto
 	double tempo = ( requestEnd.tv_sec - requestStart.tv_sec ) + ( requestEnd.tv_nsec - requestStart.tv_nsec ) / BILLION;
-	printf("Tempo gasto: %lf\n", tempo);
 
-	// Exibir erro médio (RMSE)
-	printf("Erro RMSE: %f\n", sqrt(errsum / (float)estim.total));
 
 	// Salvar resultado no arquivo informado
 	if (outfile != NULL ){
 		pathSetSave(outfile, &estim);
-		printf("Resultado salvo em %s\n", outfile);
+		fprintf(stderr, "Resultado salvo em %s\n", outfile);
 	}
+
+	// Relatório
+	printf("Dimensões da variável independente\tDimensões da variável dependente\tConjunto de treinamento\tConjunto de teste\tThreads\tTempo gasto\tRMSE\n");
+	printf("%d\t%d\t%d\t%d\t%d\t%.6lf\t%.6f\n", train.dim[0], train.dim[1], train.total, estim.total, threads, tempo, sqrt(errsum / (float)estim.total));
 
 	return 0;
 }

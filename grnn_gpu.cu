@@ -71,8 +71,30 @@ int main(int argc, char **argv){
 	// Identificar dispositivo
 	init_gpu();
 
-	// Cabeçalho do arquivo csv
-	printf("Dispositivo\tGeração\tCapacidade\tMultiprocessadores\tCUDA Cores / MP\tMemória Global\tCUDA Driver\tCUDA Runtime\tDimensões da variável independente\tDimensões da variável dependente\tConjunto de treinamento\tConjunto de teste\tTempo gasto\tErro médio\n");
+	struct pathSet train, estim;
+	// Carregar arquivo das amostras de treinamento
+	pathSetLoad(TRAIN, &train);
+
+	// Arquivo de teste
+	pathSetLoad(TEST, &estim);
+
+	// Determinar o tempo gasto
+	double tempo = 0;
+
+	// Calcular o erro ou salvar um arquivo com o resultado
+	// Soma dos erros das estimativas
+	float errsum = 0;
+
+	// Gerar estimativas
+	estimar(&train, &estim, ss, &errsum, &tempo);
+
+	// Salvar resultado no arquivo informado
+	if (outfile != NULL ){
+		pathSetSave(outfile, &estim);
+	}
+
+	// Cabeçalho do relatório
+	printf("Dispositivo\tGeração\tCapacidade\tMultiprocessadores\tCUDA Cores / MP\tMemória Global\tCUDA Driver\tCUDA Runtime\tDimensões da variável independente\tDimensões da variável dependente\tConjunto de treinamento\tConjunto de teste\tTempo gasto\tRMSE\n");
 
 	// Hardware
 	printf("%s\t", deviceProp.name);
@@ -94,38 +116,16 @@ int main(int argc, char **argv){
 	printf("%d.%d\t", driverVersion/1000, (driverVersion%100)/10);
 	printf("%d.%d\t", runtimeVersion/1000, (runtimeVersion%100)/10);
 
-	struct pathSet train, estim;
-	// Carregar arquivo das amostras de treinamento
-	pathSetLoad(TRAIN, &train);
-
-	// Arquivo de teste
-	pathSetLoad(TEST, &estim);
-
 	printf("%d\t", train.dim[0]);
 	printf("%d\t", train.dim[1]);
 	printf("%d\t", train.total);
 	printf("%d\t", estim.total);
-
-	// Determinar o tempo gasto
-	double tempo = 0;
-
-	// Calcular o erro ou salvar um arquivo com o resultado
-	// Soma dos erros das estimativas
-	float errsum = 0;
-
-	// Gerar estimativas
-	estimar(&train, &estim, ss, &errsum, &tempo);
 
 	// Tempo gasto
 	printf("%lf\t", tempo);
 
 	// Exibir erro médio (RMSE)
 	printf("%f\n", sqrt(errsum / (float)estim.total));
-
-	// Salvar resultado no arquivo informado
-	if (outfile != NULL ){
-		pathSetSave(outfile, &estim);
-	}
 
 	return 0;
 }
