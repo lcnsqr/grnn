@@ -4,7 +4,8 @@
 // Definições do dispositivo
 cudaDeviceProp deviceProp;
 
-// Estimar a variável dependente (kernel)
+// Estimar a variável dependente (kernel) 
+// Este kernel não usa memória compartilhada
 // train: Conjunto de treinamento
 // total: Total de amostras no conjunto de treinamento
 // threadsPerBlock: Threads por bloco
@@ -13,6 +14,49 @@ cudaDeviceProp deviceProp;
 // yPart: Acumulador das somas parciais
 // s: Parâmetro da regressão
 __global__ void estimKernel(const float* __restrict__ train, const unsigned int total, const unsigned int threadsPerBlock, const unsigned int* __restrict__ dim, const float* __restrict__ x, float* __restrict__ yPart, const float s){
+	// Ignorar se thread atual ultrapassou total de amostras
+	if ( blockIdx.x * threadsPerBlock + threadIdx.x + 1 > total ) return;
+	// Variáveis auxiliares para guardar as
+	// posições iniciais no conjunto de treinamento
+	unsigned int pos[3];
+	// Fator comum das operações
+	float f;
+	// Distância estimando-amostra
+	float d = 0;
+	// Guardar diferença entre estimando 
+	// e variável independente da amostra
+	float dif;
+	// Componentes da variável dependente da amostra no conjunto de treinamento
+	pos[0] = blockIdx.x * threadsPerBlock + threadIdx.x;
+	for(int c = 0; c < dim[0]; c++){
+		// Distância entre estimando e variável independente da amostra
+		dif = __fsub_rn(x[c], train[pos[0] + c * total]);
+		d = __fadd_rn(d, __fmul_rn(dif, dif));
+	}
+	// Fator comum
+	f = __expf( __fdiv_rn(-d, s));
+	// Efetuar a soma parcial para cada dimensão da variável dependente
+	pos[0] += total * dim[0];
+	pos[1] = blockIdx.x * 2 * dim[1];
+	pos[2] = pos[1] + dim[1];
+	for(unsigned int c = 0; c < dim[1]; c++){
+		// Parcial do numerador
+		atomicAdd( &yPart[pos[1] + c], train[pos[0] + c * total] * f );
+		// Parcial do denominador
+		atomicAdd( &yPart[pos[2] + c], f );
+	}
+}
+
+// Estimar a variável dependente (kernel) 
+// Este kernel usa memória compartilhada
+// train: Conjunto de treinamento
+// total: Total de amostras no conjunto de treinamento
+// threadsPerBlock: Threads por bloco
+// dim: Dimensões da variável independente e dependente
+// x: Variável independente lida
+// yPart: Acumulador das somas parciais
+// s: Parâmetro da regressão
+__global__ void estimKernelShared(const float* __restrict__ train, const unsigned int total, const unsigned int threadsPerBlock, const unsigned int* __restrict__ dim, const float* __restrict__ x, float* __restrict__ yPart, const float s){
 	// Ignorar se thread atual ultrapassou total de amostras
 	if ( blockIdx.x * threadsPerBlock + threadIdx.x + 1 > total ) return;
 	// Variável auxiliar para guardar a posição 
@@ -89,7 +133,7 @@ void init_gpu(){
  * errsum: Soma do erro
  * tempo: Contagem do tempo gasto
  */
-void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum, double *tempo){
+void estimar(struct pathSet *train, struct pathSet *estim, const float ss, const char shared, float *errsum, double *tempo){
 	// Registrar conjunto de treinamento na memória para 
 	// evitar paginação e agilizar o acesso pela GPU ao
 	// mapear a memória entre o host e a memória da GPU
@@ -167,7 +211,14 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 		cudaMemcpy(xDev, x, dim[0]*sizeof(float), cudaMemcpyHostToDevice);
 
 		// Invocar kernel
-		estimKernel<<<blocksPerGrid, threadsPerBlock, 2*dim[1]*sizeof(float)>>>(trainDataDev, train->total, threadsPerBlock, dimDev, xDev, yPartDev, s);
+    if ( shared == 1 ){
+      // Usar memória compartilhada
+      estimKernelShared<<<blocksPerGrid, threadsPerBlock, 2*dim[1]*sizeof(float)>>>(trainDataDev, train->total, threadsPerBlock, dimDev, xDev, yPartDev, s);
+    }
+    else {
+      // Não usar memória compartilhada
+      estimKernel<<<blocksPerGrid, threadsPerBlock>>>(trainDataDev, train->total, threadsPerBlock, dimDev, xDev, yPartDev, s);
+    }
 		
 		// Copiar parciais da estimativa geradas
 		cudaMemcpy(yPart, yPartDev, 2*blocksPerGrid*dim[1]*sizeof(float), cudaMemcpyDeviceToHost);

@@ -55,6 +55,7 @@ int main(int argc, char **argv){
 	// Opções da linha de comando
 	const char* outfile = NULL;
 	float ss = 1;
+  char shared = 0;
 	for(int i = 1; i < argc; i++){
 		switch (argv[i][1]){
 		case 'o':
@@ -64,6 +65,10 @@ int main(int argc, char **argv){
 		case 's':
 			// Escalar do parâmetro sigma
 			ss = atof(argv[i+1]);
+		break;
+		case 'c':
+			// Usar memória compartilhada da GPU
+			shared = 1;
 		break;
 		}
 	}
@@ -86,7 +91,7 @@ int main(int argc, char **argv){
 	float errsum = 0;
 
 	// Gerar estimativas
-	estimar(&train, &estim, ss, &errsum, &tempo);
+	estimar(&train, &estim, ss, shared, &errsum, &tempo);
 
 	// Salvar resultado no arquivo informado
 	if (outfile != NULL ){
