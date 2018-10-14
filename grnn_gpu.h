@@ -15,9 +15,9 @@ cudaDeviceProp deviceProp;
 __global__ void estimKernel(const float* __restrict__ train, const unsigned int total, const unsigned int threadsPerBlock, const unsigned int* __restrict__ dim, const float* __restrict__ x, float* __restrict__ yPart, const float s){
 	// Ignorar se thread atual ultrapassou total de amostras
 	if ( blockIdx.x * threadsPerBlock + threadIdx.x + 1 > total ) return;
-	// Variáveis auxiliares para guardar as
-	// posições iniciais no conjunto de treinamento
-	unsigned int pos[3];
+	// Variável auxiliar para guardar a posição 
+  // inicial no conjunto de treinamento
+	unsigned int pos;
 	// Fator comum das operações
 	float f;
 	// Distância estimando-amostra
@@ -26,24 +26,38 @@ __global__ void estimKernel(const float* __restrict__ train, const unsigned int 
 	// e variável independente da amostra
 	float dif;
 	// Componentes da variável dependente da amostra no conjunto de treinamento
-	pos[0] = blockIdx.x * threadsPerBlock + threadIdx.x;
+	pos = blockIdx.x * threadsPerBlock + threadIdx.x;
 	for(int c = 0; c < dim[0]; c++){
 		// Distância entre estimando e variável independente da amostra
-		dif = __fsub_rn(x[c], train[pos[0] + c * total]);
+		dif = __fsub_rn(x[c], train[pos + c * total]);
 		d = __fadd_rn(d, __fmul_rn(dif, dif));
 	}
 	// Fator comum
 	f = __expf( __fdiv_rn(-d, s));
-	// Efetuar a soma parcial para cada dimensão da variável dependente
-	pos[0] += total * dim[0];
-	pos[1] = blockIdx.x * 2 * dim[1];
-	pos[2] = pos[1] + dim[1];
+	// Efetuar a soma parcial para cada dimensão da 
+  // variável dependente na memória compartilhada
+  extern __shared__ float par[];
+  float *numers = par;
+  float *denoms = &par[dim[1]];
+	pos += total * dim[0];
+  if ( threadIdx.x == 0 ){
+    for(unsigned int c = 0; c < dim[1]; c++){
+      numers[c] = 0;
+      denoms[c] = 0;
+    }
+  }
+  __syncthreads();
 	for(unsigned int c = 0; c < dim[1]; c++){
 		// Parcial do numerador
-		atomicAdd( &yPart[pos[1] + c], train[pos[0] + c * total] * f );
+		atomicAdd( &numers[c], train[pos + c * total] * f );
 		// Parcial do denominador
-		atomicAdd( &yPart[pos[2] + c], f );
+		atomicAdd( &denoms[c], f );
 	}
+  __syncthreads();
+  // Copiar parciais para a memória geral
+  if ( threadIdx.x == 0 ){
+    memcpy(&yPart[blockIdx.x * 2 * dim[1]], par, 2*dim[1]*sizeof(float));
+  }
 }
 
 // Identificar e iniciar o dispositivo
@@ -153,7 +167,7 @@ void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float
 		cudaMemcpy(xDev, x, dim[0]*sizeof(float), cudaMemcpyHostToDevice);
 
 		// Invocar kernel
-		estimKernel<<<blocksPerGrid, threadsPerBlock>>>(trainDataDev, train->total, threadsPerBlock, dimDev, xDev, yPartDev, s);
+		estimKernel<<<blocksPerGrid, threadsPerBlock, 2*dim[1]*sizeof(float)>>>(trainDataDev, train->total, threadsPerBlock, dimDev, xDev, yPartDev, s);
 		
 		// Copiar parciais da estimativa geradas
 		cudaMemcpy(yPart, yPartDev, 2*blocksPerGrid*dim[1]*sizeof(float), cudaMemcpyDeviceToHost);
