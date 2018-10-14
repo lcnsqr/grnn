@@ -11,6 +11,7 @@ def main(argv):
   # Os argumentos do comando são os parâmetros de treinamento
   batch = int(argv[1])
   steps = int(argv[2])
+  epoch = int(argv[3])
 
   # Cada linha do arquivo CSV contém as componentes da variável independente e dependente
   totalTrain = 0
@@ -57,7 +58,8 @@ def main(argv):
 
   # Construir a função de entrada do treinamento
   def input_train():
-    return train.shuffle(10000).batch(batch).make_one_shot_iterator().get_next()
+    #return train.shuffle(totalTrain).batch(batch).make_one_shot_iterator().get_next()
+    return train.batch(batch).make_one_shot_iterator().get_next()
 
   # Construir a função de entrada da validação
   def input_test():
@@ -66,7 +68,7 @@ def main(argv):
   # Estimador DNNRegressor
   model = tf.estimator.DNNRegressor(
     # Camadas intermediárias
-    hidden_units=[4,4], 
+    hidden_units=[4], 
     # Colunas da variável independente (features)
     feature_columns=list(map(lambda h: tf.feature_column.numeric_column(key=h), featureCols)), 
     # Dimensões da variável dependente (label)
@@ -85,9 +87,10 @@ def main(argv):
   average_loss = eval_result["average_loss"]
 
   # Exibir a raiz (RMSE).
-  print("Total: {:d}, Batch: {:d}, steps: {:d}".format(totalTrain, batch, steps))
-  print("RMSE em {:d} amostras de teste: {:.6f}".format(totalTest, average_loss**0.5))
-  print()
+  #print("Total: {:d}, Batch: {:d}, steps: {:d}".format(totalTrain, batch, steps))
+  #print("RMSE em {:d} amostras de teste: {:.6f}".format(totalTest, average_loss**0.5))
+  #print()
+  print("{:d}\t{:d}\t{:d}\t{:d}\t{:d}\t{:.6f}".format(totalTrain, totalTest, batch, steps, epoch, average_loss**0.5))
 
 if __name__ == "__main__":
   os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
