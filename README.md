@@ -23,7 +23,7 @@ Sem nenhum argumento, os comandos `grnn_{cpu,pthreads,gpu}` apenas estimam o err
 
 Além dos resultados para a equação do calor, podem ser estimados os pontos do conjunto fractal Mandelbrot. Os comandos `geradorMandelbrot` e `verMandelbrot` são compilados separadamente com o comando `make -f Makefile.mandelbrot`. São necessárias as bibliotecas de desenvolvimento **SDL2** para compilar esses comandos.
 
-O comando `geradorMalndelbrot` abre um tela com a representação gráfica do conjunto Mandelbrot. A tecla **z** aproxima, a tecla **x** afasta e as teclas de direção transladam o semiplano. A tecla **s** armazena em *train.bin* o conjunto de treinamento para o semiplano exibido e a tecla **t** armazena em *test.bin* o conjunto de teste para o semiplano exibido. Depois de gerar um arquivo de resultados com o comando `grnn_{cpu,omp,pthreads,gpu} result.bin`, a imagem com as estimativas para o conjunto de teste é exibida com o comando `verMaldelbrot result.bin`.
+O comando `geradorMalndelbrot` abre um tela com a representação gráfica do conjunto Mandelbrot. A tecla **z** aproxima, a tecla **x** afasta e as teclas de direção transladam o semiplano. A tecla **s** armazena em *train.bin* o conjunto de treinamento para o semiplano exibido e a tecla **t** armazena em *test.bin* o conjunto de teste para o semiplano exibido. Depois de gerar um arquivo de resultados com o comando `grnn_{cpu,omp,pthreads,gpu} -o result.bin`, a imagem com as estimativas para o conjunto de teste é exibida com o comando `verMaldelbrot result.bin`.
 
 ### Equação do Calor
 
