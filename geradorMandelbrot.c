@@ -9,14 +9,17 @@
 // Valor uniformemente distribuído em [0,1)
 #define RAND ((double)(rand() >> 1)/((RAND_MAX >> 1) + 1))
 
+// Tamanho do conjunto de teste
+#define TESTSIZE 8192
+
 // Parâmetros iniciais
 #define XMIN -2.5
 #define XMAX 1
 #define YMIN -1.75
 #define YMAX 1.75
 #define ITERATIONS 1000
-#define WIDTH 400
-#define HEIGHT 400
+#define WIDTH 700
+#define HEIGHT 700
 #define DEPTH 4
 
 struct View {
@@ -85,8 +88,8 @@ void render(struct Context *ctx){
 		iy = (i/ctx->view.depth) / ctx->view.width;
 		// A orientação vertical é invertida na imagem
 		iy = ctx->view.height - iy - 1;
-      x = ctx->xmin + (ctx->xmax - ctx->xmin) * ix / (ctx->view.width - 1);
-      y = ctx->ymin + (ctx->ymax - ctx->ymin) * iy / (ctx->view.height - 1);
+    x = ctx->xmin + (ctx->xmax - ctx->xmin) * ix / (ctx->view.width - 1);
+    y = ctx->ymin + (ctx->ymax - ctx->ymin) * iy / (ctx->view.height - 1);
 		c = floor((float)ITERATIONS * log(mandelIter(x, y, ctx->iterations) )/log(ITERATIONS+1));
 		// Conjunto de treinamento
 		ctx->train.data.f[ (i/ctx->view.depth) ] = x;
@@ -136,6 +139,19 @@ int main(int argc, char **argv){
 	ctx.train.dim[1] = 1;
 	ctx.train.size = ctx.train.total * 3 * sizeof(float);
 	ctx.train.data.f = (float*)malloc(ctx.train.size);
+	// Conjunto de teste
+	ctx.test.type = 0x0f;
+	ctx.test.total = TESTSIZE;
+	ctx.test.vertices = 2;
+	ctx.test.dim = (unsigned int*)malloc(2*sizeof(unsigned int));
+	ctx.test.dim[0] = 2;
+	ctx.test.dim[1] = 1;
+	ctx.test.size = ctx.test.total * 3 * sizeof(float);
+	ctx.test.data.f = (float*)malloc(ctx.test.size);
+  // Variável (auxiliares) independente no conjunto de teste
+  float x, y;
+  // Variável (auxiliar) dependente no conjunto de teste
+  int c;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Erro ao iniciar o SDL: %s", SDL_GetError());
@@ -205,8 +221,8 @@ int main(int argc, char **argv){
 				// zoom in
 				float mx = (ctx.xmin + ctx.xmax)/2.0;
 				float my = (ctx.ymin + ctx.ymax)/2.0;
-				float dx = (ctx.xmax - ctx.xmin)/3.0;
-				float dy = (ctx.ymax - ctx.ymin)/3.0;
+				float dx = (ctx.xmax - ctx.xmin)/4.0;
+				float dy = (ctx.ymax - ctx.ymin)/4.0;
 				ctx.xmin = mx - dx;
 				ctx.xmax = mx + dx;
 				ctx.ymin = my - dy;
@@ -217,8 +233,8 @@ int main(int argc, char **argv){
 				// zoom out
 				float mx = (ctx.xmin + ctx.xmax)/2.0;
 				float my = (ctx.ymin + ctx.ymax)/2.0;
-				float dx = (ctx.xmax - ctx.xmin)*0.75;
-				float dy = (ctx.ymax - ctx.ymin)*0.75;
+				float dx = (ctx.xmax - ctx.xmin);
+				float dy = (ctx.ymax - ctx.ymin);
 				ctx.xmin = mx - dx;
 				ctx.xmax = mx + dx;
 				ctx.ymin = my - dy;
@@ -229,11 +245,25 @@ int main(int argc, char **argv){
 				// Gravar conjunto de treinamento
 				pathSetSave("train.bin", &ctx.train);
 				printf("Conjunto de treinamento train.bin salvo\n");
-			}
-			else if ( ctx.event.key.keysym.sym == SDLK_t ){ 
-				// Gravar conjunto de teste
-				pathSetSave("test.bin", &ctx.train);
+        // Produzir pontos aleatórios na área correspondente ao conjunto 
+        // de treinamento para servirem como conjunto de teste
+        #pragma omp parallel for private(x,y,c)
+        for (int i = 0; i < ctx.test.total; i++){
+          x = ctx.xmin + (ctx.xmax - ctx.xmin) * RAND;
+          y = ctx.ymin + (ctx.ymax - ctx.ymin) * RAND;
+          c = floor((float)ITERATIONS * log(mandelIter(x, y, ctx.iterations) )/log(ITERATIONS+1));
+          // Conjunto de treinamento
+          ctx.test.data.f[ i ] = x;
+          ctx.test.data.f[ i + ctx.test.total ] = y;
+          ctx.test.data.f[ i + ctx.test.total*2 ] = (float)c/ITERATIONS;
+        }
+				pathSetSave("test.bin", &ctx.test);
 				printf("Conjunto de teste test.bin salvo\n");
+			}
+			else if ( ctx.event.key.keysym.sym == SDLK_i ){ 
+        // Exibir informações
+        fprintf(stderr, "Limites:\n\tEsquerdo:\t%f\n\tDireito:\t%f\n\tInferior:\t%f\n\tSuperior:\t%f\n", ctx.xmin, ctx.xmax, ctx.ymin, ctx.ymax);
+        fprintf(stderr, "Resolução:\n\t%f pontos por unidade\n", (float)WIDTH / fabs(ctx.xmax - ctx.xmin));
 			}
 		}
 		SDL_PumpEvents();

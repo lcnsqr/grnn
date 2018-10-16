@@ -11,8 +11,8 @@
 #define YMIN -1.75
 #define YMAX 1.75
 #define ITERATIONS 1000
-#define WIDTH 400
-#define HEIGHT 400
+#define WIDTH 700
+#define HEIGHT 700
 #define DEPTH 4
 
 struct View {
@@ -53,9 +53,14 @@ void render(struct Context *ctx){
 	#pragma omp parallel for private(x,y,c,rgba)
 	for (int i = 0; i < ctx->view.frameSize; i += ctx->view.depth){
 		// Conjunto do resultado
+    /*
 		x = ctx->result.data.f[ (i/ctx->view.depth) ];
 		y = ctx->result.data.f[ (i/ctx->view.depth) + WIDTH*HEIGHT ];
 		c = floor(ctx->iterations * ctx->result.data.f[ (i/ctx->view.depth) + WIDTH*HEIGHT*2 ]);
+    */
+		x = ctx->result.data.f[ (i/ctx->view.depth) ];
+		y = ctx->result.data.f[ (i/ctx->view.depth) + ctx->result.total ];
+    c = floor(ctx->iterations * ctx->result.data.f[ctx->result.total * 2 + (i/ctx->view.depth)]);
 		// Pixels
 		corMap(&ctx->view.cor, c, rgba);
 		ctx->view.frame[i] = (char)rgba[0];
@@ -123,6 +128,13 @@ int main(int argc, char **argv){
 			break;
 			}
 		}
+		else if( ctx.event.type == SDL_KEYDOWN ){
+			if ( ctx.event.key.keysym.sym == SDLK_q ){ 
+				// Tecla "q" encerra
+				finalizar(&ctx);
+				return 0;
+			}
+    }
 		SDL_PumpEvents();
 		/*
 		if (SDL_GetMouseState(&ctx.curPos, &ctx.curPos[1]) & SDL_BUTTON(SDL_BUTTON_LEFT)) {
