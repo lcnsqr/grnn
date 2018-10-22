@@ -27,7 +27,7 @@ O comando `geradorMandelbrot` abre um tela com a representação gráfica do con
 
 ### Equação do Calor
 
-O comando `geradorDifusao` tem três opções: `-t`, `-e` e `-d`. A opção `-t TOTAL` define em `TOTAL` a quantidade de amostras de treinamento e a opção `-t TOTALTEST` define em `TOTALTEST` a quantidade de amostras de teste, onde `TOTAL` e `TOTALTEST` são números inteiros maiores que zero.
+O comando `geradorDifusao` tem três opções: `-t`, `-e` e `-d`. A opção `-t TOTAL` define em `TOTAL` a quantidade de amostras de treinamento e a opção `-e TOTALTEST` define em `TOTALTEST` a quantidade de amostras de teste, onde `TOTAL` e `TOTALTEST` são números inteiros maiores que zero.
 
 A opção `-d` define a quantidade de pontos igualmente espaçados no intervalo da solução, o que também determina o número de dimensões das variáveis independentes e dependentes da regressão.
 
