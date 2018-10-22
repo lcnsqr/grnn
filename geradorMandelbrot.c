@@ -13,10 +13,6 @@
 #define TESTSIZE 8192
 
 // Parâmetros iniciais
-#define XMIN -2.5
-#define XMAX 1
-#define YMIN -1.75
-#define YMAX 1.75
 #define ITERATIONS 1000
 #define DEPTH 4
 
@@ -72,7 +68,7 @@ double mandelIter(double cx, double cy, int iterations){
 	return (float)i;
 }
 
-void render(struct Context *ctx){
+void render(struct Context *ctx, int window){
 	// Coordenadas na imagem
 	int ix, iy;
 	// Coordenadas do ponto candidato
@@ -101,18 +97,25 @@ void render(struct Context *ctx){
 		ctx->view.frame[i+3] = (char)rgba[3];
 	}
 	
-	// Atualizar exibição
-	SDL_UpdateTexture(ctx->texture, NULL, ctx->view.frame, DEPTH * ctx->view.width * sizeof(char));
-	SDL_RenderClear(ctx->renderer);
-	SDL_RenderCopy(ctx->renderer, ctx->texture, NULL, NULL);
-
-	SDL_RenderPresent(ctx->renderer);
+  if ( window == 1 ){
+    // Atualizar exibição
+    SDL_UpdateTexture(ctx->texture, NULL, ctx->view.frame, DEPTH * ctx->view.width * sizeof(char));
+    SDL_RenderClear(ctx->renderer);
+    SDL_RenderCopy(ctx->renderer, ctx->texture, NULL, NULL);
+    SDL_RenderPresent(ctx->renderer);
+  }
 }
 
 int main(int argc, char **argv){
 	// Opções da linha de comando
+  float XMIN = -2.5;
+  float XMAX = 1;
+  float YMIN = -1.75;
+  float YMAX = 1.75;
 	unsigned int WIDTH = 700;
 	unsigned int HEIGHT = 700;
+  // Exibir tela interativa
+  int window = 1;
 	for(int i = 1; i < argc; i++){
 		switch (argv[i][1]){
 		case 'w':
@@ -122,6 +125,26 @@ int main(int argc, char **argv){
 		case 'h':
 			// Altura
       HEIGHT = atoi(argv[i+1]);
+		break;
+		case 't':
+      // Top
+      YMAX = atof(argv[i+1]);
+		break;
+		case 'r':
+      // Right
+      XMAX = atof(argv[i+1]);
+		break;
+		case 'b':
+      // Bottom
+      YMIN = atof(argv[i+1]);
+		break;
+		case 'l':
+      // Left
+      XMIN = atof(argv[i+1]);
+		break;
+		case 's':
+      // Não exibir janela interativa
+      window = 0;
 		break;
 		}
 	}
@@ -166,6 +189,27 @@ int main(int argc, char **argv){
   // Variável (auxiliar) dependente no conjunto de teste
   int c;
 
+  if ( window == 0 ){
+    // Modo não interativo
+    render(&ctx, window);
+    // Gerar conjunto de treinamento
+    pathSetSave("train.bin", &ctx.train);
+    // Produzir pontos aleatórios na área correspondente ao conjunto 
+    // de treinamento para servirem como conjunto de teste
+    #pragma omp parallel for private(x,y,c)
+    for (int i = 0; i < ctx.test.total; i++){
+      x = ctx.xmin + (ctx.xmax - ctx.xmin) * RAND;
+      y = ctx.ymin + (ctx.ymax - ctx.ymin) * RAND;
+      c = floor((float)ITERATIONS * log(mandelIter(x, y, ctx.iterations) )/log(ITERATIONS+1));
+      // Conjunto de teste
+      ctx.test.data.f[ i ] = x;
+      ctx.test.data.f[ i + ctx.test.total ] = y;
+      ctx.test.data.f[ i + ctx.test.total*2 ] = (float)c/ITERATIONS;
+    }
+    pathSetSave("test.bin", &ctx.test);
+		exit(0);
+  }
+
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Erro ao iniciar o SDL: %s", SDL_GetError());
 		exit(-1);
@@ -178,7 +222,9 @@ int main(int argc, char **argv){
 	}
 	SDL_SetWindowTitle(ctx.window, "Mandelbrot");
 	ctx.texture = SDL_CreateTexture(ctx.renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING, ctx.view.width, ctx.view.height);
-	render(&ctx);
+
+  // Gerar fractal
+	render(&ctx, window);
 
 	// Recolher eventos
 	while (1){
@@ -207,28 +253,28 @@ int main(int argc, char **argv){
 				float dy = (ctx.ymax - ctx.ymin)*1e-1;
 				ctx.ymin += dy;
 				ctx.ymax += dy;
-				render(&ctx);
+				render(&ctx, window);
 			}
 			else if ( ctx.event.key.keysym.sym == SDLK_DOWN ){ 
 				// Seta pra baixo
 				float dy = (ctx.ymax - ctx.ymin)*1e-1;
 				ctx.ymin -= dy;
 				ctx.ymax -= dy;
-				render(&ctx);
+				render(&ctx, window);
 			}
 			else if ( ctx.event.key.keysym.sym == SDLK_LEFT ){ 
 				// Seta pra cima
 				float dx = (ctx.xmax - ctx.xmin)*1e-1;
 				ctx.xmin -= dx;
 				ctx.xmax -= dx;
-				render(&ctx);
+				render(&ctx, window);
 			}
 			else if ( ctx.event.key.keysym.sym == SDLK_RIGHT ){ 
 				// Seta pra baixo
 				float dx = (ctx.xmax - ctx.xmin)*1e-1;
 				ctx.xmin += dx;
 				ctx.xmax += dx;
-				render(&ctx);
+				render(&ctx, window);
 			}
 			else if ( ctx.event.key.keysym.sym == SDLK_z ){ 
 				// zoom in
@@ -240,7 +286,7 @@ int main(int argc, char **argv){
 				ctx.xmax = mx + dx;
 				ctx.ymin = my - dy;
 				ctx.ymax = my + dy;
-				render(&ctx);
+				render(&ctx, window);
 			}
 			else if ( ctx.event.key.keysym.sym == SDLK_x ){ 
 				// zoom out
@@ -252,7 +298,7 @@ int main(int argc, char **argv){
 				ctx.xmax = mx + dx;
 				ctx.ymin = my - dy;
 				ctx.ymax = my + dy;
-				render(&ctx);
+				render(&ctx, window);
 			}
 			else if ( ctx.event.key.keysym.sym == SDLK_s ){ 
 				// Gravar conjunto de treinamento
@@ -265,7 +311,7 @@ int main(int argc, char **argv){
           x = ctx.xmin + (ctx.xmax - ctx.xmin) * RAND;
           y = ctx.ymin + (ctx.ymax - ctx.ymin) * RAND;
           c = floor((float)ITERATIONS * log(mandelIter(x, y, ctx.iterations) )/log(ITERATIONS+1));
-          // Conjunto de treinamento
+          // Conjunto de teste
           ctx.test.data.f[ i ] = x;
           ctx.test.data.f[ i + ctx.test.total ] = y;
           ctx.test.data.f[ i + ctx.test.total*2 ] = (float)c/ITERATIONS;
