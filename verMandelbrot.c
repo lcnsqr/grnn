@@ -11,8 +11,6 @@
 #define YMIN -1.75
 #define YMAX 1.75
 #define ITERATIONS 1000
-#define WIDTH 700
-#define HEIGHT 700
 #define DEPTH 4
 
 struct View {
@@ -78,6 +76,30 @@ void render(struct Context *ctx){
 }
 
 int main(int argc, char **argv){
+	// Opções da linha de comando
+  if ( argc < 7 ){
+    fprintf(stderr, "Sintaxe: ./verMandelbrot -f arquivo.bin -w WIDTH -h HEIGHT\n");
+    exit(-1);
+  }
+  const char *ARQ;
+	unsigned int WIDTH = 700;
+	unsigned int HEIGHT = 700;
+	for(int i = 1; i < argc; i++){
+		switch (argv[i][1]){
+		case 'w':
+			// Largura
+      WIDTH = atoi(argv[i+1]);
+		break;
+		case 'h':
+			// Altura
+      HEIGHT = atoi(argv[i+1]);
+		break;
+		case 'f':
+			// Arquivo
+      ARQ = argv[i+1];
+		break;
+    }
+  }
 	// Contextos de renderização
 	struct Context ctx;
 	ctx.iterations = ITERATIONS;
@@ -96,7 +118,7 @@ int main(int argc, char **argv){
 		exit(EXIT_FAILURE);
 	}
 	// Carregar arquivo da estimativa
-	pathSetLoad(argv[1], &ctx.result);
+	pathSetLoad(ARQ, &ctx.result);
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Erro ao iniciar o SDL: %s", SDL_GetError());
 		exit(-1);
