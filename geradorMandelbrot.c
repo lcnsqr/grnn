@@ -18,8 +18,6 @@
 #define YMIN -1.75
 #define YMAX 1.75
 #define ITERATIONS 1000
-#define WIDTH 700
-#define HEIGHT 700
 #define DEPTH 4
 
 struct View {
@@ -112,6 +110,21 @@ void render(struct Context *ctx){
 }
 
 int main(int argc, char **argv){
+	// Opções da linha de comando
+	unsigned int WIDTH = 700;
+	unsigned int HEIGHT = 700;
+	for(int i = 1; i < argc; i++){
+		switch (argv[i][1]){
+		case 'w':
+			// Largura
+      WIDTH = atoi(argv[i+1]);
+		break;
+		case 'h':
+			// Altura
+      HEIGHT = atoi(argv[i+1]);
+		break;
+		}
+	}
 	// Semente aleatória
 	srand((unsigned int)time(NULL));
 	// Contextos de renderização
