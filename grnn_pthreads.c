@@ -220,6 +220,9 @@ int main(int argc, char **argv){
 	// Quantidade de threads
 	int threads = 1;
 
+  // Dry-run, exibir um resultado sem computar estimativa
+  int bogus = 0;
+
 	for(int i = 1; i < argc; i++){
 		switch (argv[i][1]){
 		case 'o':
@@ -233,6 +236,10 @@ int main(int argc, char **argv){
 		case 'p':
 			// Quantidade de threads
 			threads = atoi(argv[i+1]);
+		break;
+		case 'b':
+			// Dry-run
+			bogus = 1;
 		break;
 		}
 	}
@@ -253,7 +260,9 @@ int main(int argc, char **argv){
 	clock_gettime(CLOCK_REALTIME, &requestStart);
 
 	// Gerar estimativas
-	estimar(&train, &estim, ss, &errsum, threads);
+  if ( bogus == 0 ){
+    estimar(&train, &estim, ss, &errsum, threads);
+  }
 
 	// Fim da contagem
 	clock_gettime(CLOCK_REALTIME, &requestEnd);

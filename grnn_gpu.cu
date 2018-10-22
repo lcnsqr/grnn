@@ -56,6 +56,8 @@ int main(int argc, char **argv){
 	const char* outfile = NULL;
 	float ss = 1;
   char shared = 0;
+  // Dry-run, exibir um resultado sem computar estimativa
+  int bogus = 0;
 	for(int i = 1; i < argc; i++){
 		switch (argv[i][1]){
 		case 'o':
@@ -69,6 +71,10 @@ int main(int argc, char **argv){
 		case 'c':
 			// Usar memória compartilhada da GPU
 			shared = 1;
+		break;
+		case 'b':
+			// Dry-run
+			bogus = 1;
 		break;
 		}
 	}
@@ -91,7 +97,9 @@ int main(int argc, char **argv){
 	float errsum = 0;
 
 	// Gerar estimativas
-	estimar(&train, &estim, ss, shared, &errsum, &tempo);
+  if ( bogus == 0 ){
+    estimar(&train, &estim, ss, shared, &errsum, &tempo);
+  }
 
 	// Salvar resultado no arquivo informado
 	if (outfile != NULL ){
