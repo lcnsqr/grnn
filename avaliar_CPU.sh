@@ -11,7 +11,7 @@ CORES=$(grep '^cpu cores' < /proc/cpuinfo | uniq -c | awk '{print $5}')
 PROCS=$(grep '^cpu cores' < /proc/cpuinfo | uniq -c | awk '{print $1}')
 
 # Quantidade de repetições
-REP=50
+REP=10
 
 # Threads em paralelo
 THREADS=`seq $PROCS`
@@ -71,7 +71,7 @@ for s in $SETS; do
 		done
 		rm result.dat
 		# Agrupar resultados para cada quantidade de threads
-		sed -e '2d' < "00_${s#*_}_$t.dat" > "mandelbrot/CPU_${t}_${s#*_}.dat"
+		sed -e '2d' < "`seq -w 0 $(($REP-1)) | head -n 1`_${s#*_}_$t.dat" > "mandelbrot/CPU_${t}_${s#*_}.dat"
 		for r in `seq -w 0 $(($REP-1))`; do
 			sed -e '1d' < "${r}_${s#*_}_$t.dat" >> "mandelbrot/CPU_${t}_${s#*_}.dat"
 			rm "${r}_${s#*_}_$t.dat"
@@ -127,7 +127,7 @@ for s in $SETS; do
 		done
 		rm result.dat
 		# Agrupar resultados para cada quantidade de threads
-		sed -e '2d' < "00_${s#*_}_$t.dat" > "difusao/CPU_${t}_${s#*_}.dat"
+		sed -e '2d' < "`seq -w 0 $(($REP-1)) | head -n 1`_${s#*_}_$t.dat" > "difusao/CPU_${t}_${s#*_}.dat"
 		for r in `seq -w 0 $(($REP-1))`; do
 			sed -e '1d' < "${r}_${s#*_}_$t.dat" >> "difusao/CPU_${t}_${s#*_}.dat"
 			rm "${r}_${s#*_}_$t.dat"
