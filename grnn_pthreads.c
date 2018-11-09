@@ -17,11 +17,8 @@
 // Estrutura para o contexto de cada thread que 
 // computa uma parcial do conjunto de treinamento
 struct TrainPart {
-	// Endereço da parte donjunto de treinamento
+	// Endereço da parcial do conjunto de treinamento
 	float *train;
-	// Endereço da parte donjunto de treinamento
-	// com as variáveis dependentes
-	float *train_y;
 	// Total de pares no treinamento
 	unsigned int total;
 	// Total de pares no treinamento parcial
@@ -50,13 +47,13 @@ void *estimPart(void *voidTrainPart){
 		// Computar o fator comum da i-esima amostra
 		d = 0;
 		for (int j = 0; j < tp->dim[0]; j++){
-			d += pow(tp->train[i + j * tp->total] - tp->x[j], 2);
+			d += pow(tp->train[i * (tp->dim[0]+tp->dim[1]) + j] - tp->x[j], 2);
 		}
 		f = exp( - d / tp->s );
 		// Iterar para cada componente de y
 		for (int c = 0; c < tp->dim[1]; c++){
 			// Numerador da fração para o c-ésimo componente
-			tp->numer[c] += tp->train_y[c * tp->total + i] * f;
+			tp->numer[c] += tp->train[i * (tp->dim[0]+tp->dim[1]) + tp->dim[0] + c] * f;
 			// Denominador da fração
 			tp->denom[c] += f;
 		}
@@ -72,13 +69,17 @@ void *estimPart(void *voidTrainPart){
 // y: Estimativa da variável dependente
 // s: Parâmetro da regressão
 // threads: Quantidade de threads
-void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s, int threads){
+void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, float *y, float s, unsigned int threads){
 	// Contexto para cada thread
 	struct TrainPart *tp = malloc(threads*sizeof(struct TrainPart));
 	// Acumuladores do numerador e denominador 
 	// do estimador para cada thread
 	float **aNumer = malloc(threads*sizeof(float*));
 	float **aDenom = malloc(threads*sizeof(float*));
+  // Número de amostras de treinamento para cada thread
+  unsigned int totalPart = total / threads;
+  // Resto se parcial não for inteiro
+  unsigned int resto = total % threads;
 	// Configurar contexto para cada thread
 	for (int t = 0; t < threads; t++){
 		// Acumuladores para cada dimensão da variável dependente
@@ -88,10 +89,13 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
 			aNumer[t][c] = 0;
 			aDenom[t][c] = 0;
 		}
-		tp[t].train = &train[t*(total/threads)];
-		tp[t].train_y = &train[total*dim[0] + t*(total/threads)];
+		tp[t].train = &train[t*totalPart*(dim[0]+dim[1])];
 		tp[t].total = total;
-		tp[t].totalPart = total / threads;
+    tp[t].totalPart = totalPart;
+    if ( t == threads - 1 ){
+      // O último thread computa o resto
+      tp[t].totalPart += resto;
+    }
 		tp[t].dim = dim;
 		tp[t].x = x;
 		tp[t].s = s;
@@ -175,7 +179,7 @@ void estimativa(float *train, unsigned int total, unsigned int *dim, float *x, f
  * errsum: soma do erro
  * threads: Quantidade de threads
  */
-void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum, int threads){
+void estimar(struct pathSet *train, struct pathSet *estim, const float ss, float *errsum, unsigned int threads){
 	// Vetor da variável independente 
 	float *x = (float*)malloc(sizeof(float)*train->dim[0]);
 	// Vetor da estimativa 
@@ -218,7 +222,7 @@ int main(int argc, char **argv){
 	const char* outfile = NULL;
 	float ss = 1;
 	// Quantidade de threads
-	int threads = 1;
+	unsigned int threads = 1;
 
   // Dry-run, exibir um resultado sem computar estimativa
   int bogus = 0;
@@ -248,6 +252,29 @@ int main(int argc, char **argv){
 	// Carregar arquivo das amostras de treinamento
 	pathSetLoad(TRAIN, &train);
 
+	// Organizar os dados binários em pares sequenciais
+	struct pathSet trainSeq;
+  trainSeq.type = train.type;
+  trainSeq.total = train.total;
+  trainSeq.vertices = train.vertices;
+	trainSeq.dim = (unsigned int*)malloc(4 * train.vertices);
+  for ( int d = 0; d < train.vertices; d++ ){
+    trainSeq.dim[d] = train.dim[d];
+  }
+  trainSeq.size = train.size;
+  trainSeq.data.f = (float*)malloc(trainSeq.size);
+	// Extrair os pares de variáveis
+	for (int i = 0; i < train.total; i++){
+		// Variável independente
+		for (int j = 0; j < train.dim[0]; j++){
+      trainSeq.data.f[i*(trainSeq.dim[0]+trainSeq.dim[1])+j] = train.data.f[i + j * train.total];
+		}
+		// Variável dependente
+		for (int j = 0; j < train.dim[1]; j++){
+      trainSeq.data.f[i*(trainSeq.dim[0]+trainSeq.dim[1])+trainSeq.dim[0]+j] = train.data.f[train.total * train.dim[0] + i + j * train.total];
+		}
+	}
+
 	// Arquivo de teste
 	pathSetLoad(TEST, &estim);
 
@@ -261,7 +288,7 @@ int main(int argc, char **argv){
 
 	// Gerar estimativas
   if ( bogus == 0 ){
-    estimar(&train, &estim, ss, &errsum, threads);
+    estimar(&trainSeq, &estim, ss, &errsum, threads);
   }
 
 	// Fim da contagem
