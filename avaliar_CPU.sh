@@ -37,36 +37,35 @@ if [ ! -d mandelbrot ]; then
   mkdir mandelbrot
 fi
 for s in $SETS; do
-	# Link para o conjunto de treinamento
+	# Conjunto de treinamento
   TRAIN="mandelbrot/train_${s}.bin"
+  # Conjunto de teste
+  TEST="mandelbrot/test_${s}.bin"
 	if [ ! -e $TRAIN ]; then 
-    echo "Gerando ${TRAIN}..."
+    echo "Gerando conjunto ${s}..."
     ./geradorMandelbrot -w ${s%x*} -h ${s#*x} -t 0.4375 -r -0.75 -b -0.4375  -l -1.625 -s
     mv train.bin $TRAIN
+    mv test.bin $TEST
 	fi
-  # Conjunto de teste
-	if [ -e test.bin ]; then 
-    mv test.bin mandelbrot/
-  fi
 done
 
-# Link para o conjunto de teste
-if [ -e test.bin ]; then 
-  rm test.bin
-fi
-ln mandelbrot/test.bin test.bin
 for s in $SETS; do
 	# Link para o conjunto de treinamento
 	if [ -e train.bin ]; then 
 		rm train.bin
 	fi
 	ln mandelbrot/train_${s}.bin train.bin
+  # Link para o conjunto de teste
+  if [ -e test.bin ]; then 
+    rm test.bin
+  fi
+  ln mandelbrot/test_${s}.bin test.bin
 	# Executar o teste REP vezes para cada número 
 	# de threads e conjunto de treinamento
 	for t in $THREADS; do
 		for r in `seq -w 0 $(($REP-1))`; do
 			echo "Teste $((${r#0}+1)) de $REP: ${s#*_} e 8192 em $t threads"
-			./grnn_pthreads $BOGUS -s .005 -p $t > result.dat
+			./grnn_pthreads $BOGUS -s .01 -p $t > result.dat
 			paste cpuinfo.dat result.dat > "${r}_${s#*_}_$t.dat"
 		done
 		rm result.dat
